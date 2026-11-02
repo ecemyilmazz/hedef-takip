@@ -762,8 +762,32 @@ function viewCare() {
   const tabs = `<nav class="subnav"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a></nav>`;
   const empty = (c.weekly || []).length ? '' : `<section class="card"><p class="empty">Henüz düzenli bakım yok. Aşağıdan ekleyebilirsin.</p></section>`;
   if (!isDesktop()) return `${tabs}${topBar('Bakım', longDate(k))}${careBanner()}<div class="grid-cards">${empty}${weeklySecs}${secTodo}${addWeekly}</div>`;
+  // ---------- masaüstü ----------
+  const all = c.weekly || []; const wkk = weekKeys(k);
+  const doneCnt = all.filter((it) => careWeek(it, k).done >= carePer(it)).length;
+  const dueList = all.filter((it) => careDue(it, k) && !(getDay(k).care || []).some((l) => l.item === it.id));
+  const since = all.map((it) => { const l = careLast(it, k); return { it, n: l ? Math.round((dateObj(k) - dateObj(l)) / 86400000) : null }; }).sort((a, b) => (b.n == null ? 999 : b.n) - (a.n == null ? 999 : a.n));
+  const oldest = since[0];
+  const kpi = (icon, color, label, value, sub) => { const [fg, bg] = col(color); return `<div class="kpi"><div class="row" style="gap:8px"><span class="chip-ic" style="width:28px;height:28px;border-radius:8px;background:${bg};color:${fg}">${ic(icon, 15, 2)}</span><span class="kpi-l">${label}</span></div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`; };
+  const kpis = [
+    kpi('sparkle', 'pink', 'Bu hafta tamamlanan', `${doneCnt}<small> / ${all.length} bakım</small>`, Math.round(all.length ? doneCnt / all.length * 100 : 0) + '%'),
+    kpi('🔔', 'pink', 'Bugün sırası', String(dueList.length), dueList.length ? esc(dueList.map((x) => x.name).join(', ')) : 'Sırası gelen yok'),
+    kpi('📝', 'purple', 'Yapılacaklar', String(open.length), open.length ? esc(open[0].text) + (open.length > 1 ? ' +' + (open.length - 1) : '') : 'Liste boş'),
+    kpi('⏳', 'amber', 'En uzun aradır', oldest ? esc(oldest.it.name) : '—', oldest ? (oldest.n == null ? 'hiç yapılmadı' : oldest.n + ' gün önce') : '')
+  ].join('');
+  const headCells = wkk.map((x, i) => { const dt = dateObj(x); return `<th scope="col" class="${x === k ? 'today' : ''}"><span>${TR_D3[(i + 1) % 7]}</span><b>${dt.getDate()}</b></th>`; }).join('');
+  const groupRows = Object.keys(groups).map((g) => `<tr class="cb-g"><th colspan="${wkk.length + 4}" scope="colgroup">${esc(g)}</th></tr>` + groups[g].map((it) => {
+    const w = careWeek(it, k); const per = carePer(it); const ok = w.done >= per; const last = careLast(it, k); const n = last ? Math.round((dateObj(k) - dateObj(last)) / 86400000) : null; const dueNow = careDue(it, k) && !(getDay(k).care || []).some((l) => l.item === it.id);
+    const cells = wkk.map((x) => { const on = w.logs.some((l) => l.day === x); const future = x > k; return `<td>${future ? '<span class="cb-cell future"></span>' : `<button type="button" class="cb-cell ${on ? 'on' : ''} ${x === k ? 'today' : ''}" data-act="careDay" data-id="${esc(it.id)}" data-k="${x}" aria-pressed="${on}" aria-label="${esc(it.name)} · ${esc(longDate(x))}: ${on ? 'yapıldı, kaldırmak için tıkla' : 'yapıldı olarak işaretle'}">${on ? ic('check', 13, 2.8) : ''}</button>`}</td>`; }).join('');
+    return `<tr><th scope="row"><div class="row" style="gap:8px">${icoBox(careEmoji(it), it.color || 'pink', 28, 15)}<div class="col" style="min-width:0"><span style="font-size:13px;font-weight:700">${esc(it.name)}</span><span class="sub" style="font-size:11px">${it.everyDays ? it.everyDays + ' günde bir' : 'haftada ' + per}${dueNow ? ' · <b style="color:#BE185D">bugün sırası</b>' : ''}</span></div></div></th>${cells}
+      <td><span class="care-st" style="color:${ok ? '#15803D' : '#B45309'};font-size:13px">${ok ? ic('check', 12, 2.6) : ''}${w.done}/${per}</span></td><td class="sub" style="white-space:nowrap">${n == null ? '—' : n === 0 ? 'bugün' : n === 1 ? 'dün' : n + ' gün önce'}</td>
+      <td style="text-align:right;white-space:nowrap"><button type="button" class="btn btn-sm" style="height:34px;background:#BE185D;color:#fff" data-act="careDo" data-id="${esc(it.id)}">${ic('check', 13, 2.6)}Yaptım</button><button type="button" class="btn-icon" style="border:0;color:#9CA3AF;width:30px;height:30px" data-act="careItemDel" data-id="${esc(it.id)}" aria-label="${esc(it.name)} sil">${ic('x', 13, 2)}</button></td></tr>`;
+  }).join('')).join('');
+  const board = all.length ? `<section class="card" aria-label="Bu hafta"><div class="card-h"><h2>Bu hafta</h2><span class="hint">Geçmiş bir güne tıklayarak sonradan işaretleyebilirsin</span></div>
+    <div class="scroll-x"><table class="cboard"><thead><tr><th scope="col" style="text-align:left">Bakım</th>${headCells}<th scope="col">Hafta</th><th scope="col">Son</th><th></th></tr></thead><tbody>${groupRows}</tbody></table></div></section>` : empty;
   return `${tabs}<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>Bakım</h1></div></header>${careBanner()}
-    <div class="dash"><div class="dash-col">${empty}${weeklySecs}${addWeekly}</div><div class="dash-col">${secTodo}</div></div>`;
+    <div class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))">${kpis}</div>
+    <div class="dash"><div class="dash-col">${board}</div><div class="dash-col">${secTodo}${addWeekly}</div></div>`;
 }
 function viewArea(id) {
   if (id === 'maddi') return viewMoney();
@@ -1333,6 +1357,7 @@ const ACT = {
   goalCheck: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal]; if (v && v.n) delete d.goals[ds.goal]; else d.goals[ds.goal] = { n: 1, times: [nowHM()] }; }),
   // bakım
   careDo: (ds) => { mutDay(T(), (d) => { d.care = d.care || []; d.care.push({ id: uid('ca'), item: ds.id, t: nowHM() }); }); toast('Kaydedildi.'); },
+  careDay: (ds) => mutDay(ds.k, (d) => { d.care = d.care || []; if (d.care.some((l) => l.item === ds.id)) d.care = d.care.filter((l) => l.item !== ds.id); else d.care.push({ id: uid('ca'), item: ds.id, t: ds.k === T() ? nowHM() : '' }); }),
   careUndo: (ds) => mutDay(T(), (d) => { const i = (d.care || []).map((l) => l.item).lastIndexOf(ds.id); if (i >= 0) d.care.splice(i, 1); }),
   careAdd: () => { const nm = draft('careName'); if (!nm) { toast('Bakımın adını yaz.'); return; } const nnum = Math.max(1, parseInt(S.ui.drafts.carePer || '1', 10) || 1); const everyD = S.ui.drafts.careMode === 'd' ? nnum : null; const per = everyD ? 1 : nnum; const g = S.ui.drafts.careGroup || 'Lazer'; clearDraft('careName'); S.ui.drafts.carePer = '1'; mutCfg((c) => { c.care.weekly.push({ id: uid('cw'), name: nm, group: g, perWeek: per, everyDays: everyD, icon: g === 'Lazer' ? 'zap' : g === 'Kişisel bakım' ? 'hand' : g === 'Vücut' ? 'repeat' : 'sparkle', color: 'pink' }); }); },
   careItemDel: (ds) => { if (confirm('Bu bakım listeden kaldırılsın mı? Geçmiş kayıtlar silinmez.')) mutCfg((c) => { c.care.weekly = c.care.weekly.filter((x) => x.id !== ds.id); }); },
