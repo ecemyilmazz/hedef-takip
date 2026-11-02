@@ -98,7 +98,11 @@ const P = {
   music: 'M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   code: 'M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16',
   piggy: 'M5 11a7 6 0 0 1 12-3h2v3l2 1v3h-2.5a7 6 0 0 1-2.5 2.5V20h-3v-2a8 8 0 0 1-3 0v2H7v-2.8A6 6 0 0 1 5 11zM15 10h.01',
-  cart: 'M3 4h2l2.5 11h11L21 7H6.2M9 20a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM18 20a1 1 0 1 1 0-2 1 1 0 0 1 0 2z'
+  cart: 'M3 4h2l2.5 11h11L21 7H6.2M9 20a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM18 20a1 1 0 1 1 0-2 1 1 0 0 1 0 2z',
+  car: 'M5 16h14M6 16l1.5-5h9L18 16M6 16v3h2v-3M16 16v3h2v-3M8.5 13.5h.01M15.5 13.5h.01',
+  shirt: 'M8 4l-4 3 2 3 2-1v11h8V9l2 1 2-3-4-3c-.5 1.5-2 2.5-4 2.5S8.5 5.5 8 4z',
+  wallet: 'M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1zM4 7l11-3v3M16 13.5h.01',
+  repeat: 'M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4'
 };
 function ic(name, size = 22, sw = 1.8, extra = '') {
   const d = P[name] || name;
@@ -161,6 +165,21 @@ function defaultConfig() {
   return {
     v: 1, updatedAt: 0, waterGoal: 8,
     profile: { sex: 'f', height: null, birth: '', activity: 1.375 },
+    money: {
+      categories: [
+        { id: 'market', name: 'Market', icon: 'cart', color: 'green', limit: 0 },
+        { id: 'yemek', name: 'Dışarıda yemek', icon: 'plate', color: 'orange', limit: 0 },
+        { id: 'kahve', name: 'Kahve', icon: 'turk', color: 'brown', limit: 0 },
+        { id: 'ulasim', name: 'Ulaşım', icon: 'car', color: 'sky', limit: 0 },
+        { id: 'giyim', name: 'Giyim', icon: 'shirt', color: 'purple', limit: 0 },
+        { id: 'bakim', name: 'Kişisel bakım', icon: 'heart', color: 'pink', limit: 0 },
+        { id: 'eglence', name: 'Eğlence', icon: 'music', color: 'violet', limit: 0 },
+        { id: 'ev', name: 'Ev', icon: 'home', color: 'teal', limit: 0 },
+        { id: 'saglik', name: 'Sağlık', icon: 'kapsul', color: 'cyan', limit: 0 },
+        { id: 'diger', name: 'Diğer', icon: 'dot', color: 'gray', limit: 0 }
+      ],
+      recurring: [], savings: [], savingsLog: []
+    },
     nutGoals: { p: 3, y: 2, c: 3, s: 0, u: 1 },
     sportGoal: { pilGoal: 2, pilMin: 40, weekMin: 150, pilDays: [1, 4], pilTime: '20:00' },
     drinks: [
@@ -194,12 +213,12 @@ function defaultConfig() {
 function upgradeConfig(c) {
   const d = defaultConfig();
   const out = Object.assign({}, d, c || {});
-  ['nutGoals', 'sportGoal', 'profile'].forEach((k) => { out[k] = Object.assign({}, d[k], (c || {})[k] || {}); });
+  ['nutGoals', 'sportGoal', 'profile', 'money'].forEach((k) => { out[k] = Object.assign({}, d[k], (c || {})[k] || {}); });
   ['drinks', 'supps', 'acts', 'moves', 'areas'].forEach((k) => { if (!Array.isArray(out[k])) out[k] = d[k]; });
   return out;
 }
 function blankDay(key) {
-  return { date: key, updatedAt: 0, mood: null, sleep: {}, water: [], drinks: [], supps: {}, meals: {}, snacks: [], notes: [], sport: [], reps: [], goals: {} };
+  return { date: key, updatedAt: 0, mood: null, sleep: {}, water: [], drinks: [], supps: {}, meals: {}, snacks: [], notes: [], sport: [], reps: [], goals: {}, expenses: [] };
 }
 
 /* ================= durum ================= */
@@ -325,7 +344,7 @@ function uniq(arr) { const seen = new Set(); return arr.filter((x) => { const k 
 function mergeDay(local, remote) {
   // iki cihazda aynı gün değiştiyse: listeleri birleştir, tekil alanlarda yerel olanı tut
   const out = Object.assign({}, remote, local);
-  ['water', 'drinks', 'notes', 'sport', 'reps', 'snacks'].forEach((k) => { out[k] = uniq([...(remote[k] || []), ...(local[k] || [])]); });
+  ['water', 'drinks', 'notes', 'sport', 'reps', 'snacks', 'expenses'].forEach((k) => { out[k] = uniq([...(remote[k] || []), ...(local[k] || [])]); });
   out.water.sort(); ['drinks', 'reps'].forEach((k) => out[k].sort((a, b) => String(a.t).localeCompare(String(b.t))));
   out.supps = Object.assign({}, remote.supps || {}, local.supps || {});
   out.meals = Object.assign({}, remote.meals || {}, local.meals || {});
@@ -427,7 +446,8 @@ function stats(k) {
     mg: Object.keys(d.supps || {}).length ? (d.supps.mg != null) : null,
     bedEarly: bed ? bed >= '12:00' : null,
     sportMin: (d.sport || []).reduce((s, x) => s + (x.min || 0), 0), hasSport: (d.sport || []).length > 0,
-    water: (d.water || []).length
+    water: (d.water || []).length,
+    spend: (d.expenses || []).length ? daySpend(d) : 0, stressSpend: (d.expenses || []).filter((e) => e.why === 'stres' || e.why === 'plansiz').reduce((a, e) => a + e.amount, 0)
   };
 }
 const ACTIVITY = [[1.2, 'Hareketsiz (masa başı)'], [1.375, 'Hafif aktif (haftada 1–3 gün spor)'], [1.55, 'Orta aktif (haftada 3–5 gün)'], [1.725, 'Çok aktif (haftada 6–7 gün)']];
@@ -516,6 +536,7 @@ function viewHomeDesktop() {
       mini('flame', 'orange', 'Bazal', bi.ready ? fmtK(bi.bmr) + ' kcal' : '—', bi.ready ? '~' + fmtK(bi.tdee) + ' toplam' : '')
     ].join('')}</div></a>`;
   const areas = c.areas.map((a) => {
+    if (a.id === 'maddi') { const ms = moneySummary(k); return `<a class="area" href="#area:maddi"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Harcama · Bütçe · Birikim</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div><div class="minis" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="mini"><div class="col"><span class="mini-l">Bugün</span><span class="mini-v">${fmtTL(daySpend(d))}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Bu ay</span><span class="mini-v">${fmtTL(ms.spent)}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Kalan</span><span class="mini-v" style="color:${ms.left < 0 ? '#B91C1C' : '#111827'}">${ms.income ? fmtTL(ms.left) : '—'}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Birikim (bu ay)</span><span class="mini-v">${fmtTL(ms.savedMonth)}</span></div></div></div></a>`; }
     const gs = a.goals || []; const [fg] = col(a.color); const done = gs.filter((g) => goalDone(g, d)).length;
     const list = gs.slice(0, 5).map((g) => { const v = goalVal(g, d); const ok = goalDone(g, d); const [gf, gb] = col(g.color || a.color);
       return `<div class="row" style="gap:8px;min-height:30px"><span class="chip-ic" style="width:26px;height:26px;border-radius:8px;background:${gb};color:${gf}">${ic(g.icon, 14, 2)}</span><span class="grow" style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}</span><span style="font-size:12px;font-weight:700;color:${ok ? '#15803D' : '#6B7280'}">${g.type === 'check' ? (ok ? '✓ yapıldı' : 'bekliyor') : v.n + ' / ' + (g.limit ? '≤' : '') + g.target + ' ' + esc(g.unit || '')}</span></div>`; }).join('');
@@ -558,6 +579,7 @@ function viewHome() {
   const health = `<a class="area" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>
     <div class="row" style="flex-wrap:wrap;gap:6px">${chips.map(([i, f, t]) => `<span class="tag"><span style="color:${f};display:flex">${ic(i, 16, 2)}</span>${esc(t)}</span>`).join('')}</div></a>`;
   const others = c.areas.map((a) => {
+    if (a.id === 'maddi') { const ms = moneySummary(k); return `<a class="area" href="#area:maddi"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">Harcama · Bütçe · Birikim</span></div>${ic('chevR', 18, 2, 'style="color:#6B7280"')}</div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag">Bugün ${fmtTL(daySpend(d))}</span><span class="tag">Bu ay ${fmtTL(ms.spent)}</span>${ms.income ? `<span class="tag">Kalan ${fmtTL(ms.left)}</span>` : ''}</div></a>`; }
     const gs = a.goals || [];
     const done = gs.filter((g) => goalDone(g, d)).length;
     const body = gs.length
@@ -577,7 +599,87 @@ function addAreaForm() {
 /* ---------- alan (meslek / kişisel / maddi) ---------- */
 function goalVal(g, d) { return (d.goals || {})[g.id] || { n: 0, times: [] }; }
 function goalDone(g, d) { const v = goalVal(g, d); if (g.type === 'check') return v.n > 0; return g.limit ? v.n <= g.target : v.n >= g.target; }
+/* ---------- maddi ---------- */
+const WHY = [['ihtiyac', 'İhtiyaç', 'teal'], ['istek', 'İstek', 'amber'], ['stres', 'Stres / duygusal', 'pink'], ['plansiz', 'Plansız', 'purple']];
+const fmtTL = (n) => Math.round(n || 0).toLocaleString('tr-TR') + ' ₺';
+const monthPrefix = (k) => k.slice(0, 7);
+function monthLabel(k) { const d = dateObj(k); return TR_MONTHS[d.getMonth()] + ' ' + d.getFullYear(); }
+function daySpend(d) { return (d.expenses || []).reduce((s2, e) => s2 + (e.amount || 0), 0); }
+function monthExpenses(k) { const pre = monthPrefix(k); const out = []; Object.keys(S.days).filter((x) => x.startsWith(pre)).forEach((x) => (S.days[x].expenses || []).forEach((e) => out.push(Object.assign({ day: x }, e)))); return out; }
+function moneySummary(k) {
+  const m = S.config.money; const ex = monthExpenses(k);
+  const income = m.recurring.filter((r) => r.kind === 'income').reduce((s2, r) => s2 + r.amount, 0);
+  const fixed = m.recurring.filter((r) => r.kind === 'fixed').reduce((s2, r) => s2 + r.amount, 0);
+  const spent = ex.reduce((s2, e) => s2 + e.amount, 0);
+  const savedMonth = m.savingsLog.filter((l) => l.date.startsWith(monthPrefix(k))).reduce((s2, l) => s2 + l.amount, 0);
+  const left = income - fixed - spent - savedMonth;
+  const dt = dateObj(k); const dim = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate(); const daysLeft = dim - dt.getDate() + 1;
+  return { income, fixed, spent, savedMonth, left, daysLeft, perDay: left > 0 ? left / daysLeft : 0, ex };
+}
+function viewMoney() {
+  const k = todayKey(); const d = getDay(k); const m = S.config.money; const ms = moneySummary(k); const ui = S.ui.mx || (S.ui.mx = { cat: 'market', why: null });
+  const cat = (id) => m.categories.find((x) => x.id === id) || { name: 'Diğer', icon: 'dot', color: 'gray' };
+  // hızlı harcama
+  const catBtns = m.categories.map((c2) => { const on = ui.cat === c2.id; const [fg, bg] = col(c2.color); return `<button type="button" class="mcat" data-act="mxCat" data-v="${esc(c2.id)}" aria-pressed="${on}" style="${on ? `background:${bg};border-color:${fg};color:${fg}` : ''}">${ic(c2.icon, 18, 1.8)}<span>${esc(c2.name)}</span></button>`; }).join('');
+  const whyBtns = WHY.map(([id, l, c2]) => { const on = ui.why === id; const [fg, bg] = col(c2); return `<button type="button" class="pill" style="height:34px;${on ? `background:${bg};border-color:${fg};color:${fg}` : ''}" data-act="mxWhy" data-v="${id}" aria-pressed="${on}">${l}</button>`; }).join('');
+  const todayList = (d.expenses || []).slice().reverse().map((e) => { const c2 = cat(e.cat); const w = WHY.find((x) => x[0] === e.why);
+    return `<div class="row">${icoBox(c2.icon, c2.color)}<div class="col grow"><span class="name">${esc(c2.name)}${e.note ? ' · ' + esc(e.note) : ''}</span><span class="sub">${esc(e.t)}${w ? ' · ' + w[1] : ''}</span></div><b style="font-size:14px">${fmtTL(e.amount)}</b><button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="mxDel" data-id="${esc(e.id)}" aria-label="Harcamayı sil">${ic('x', 15, 2)}</button></div>`; }).join('');
+  const secAdd = `<section class="card" aria-label="Harcama ekle"><div class="card-h"><h2>Harcama ekle</h2><span class="hint">Saatiyle kaydedilir</span></div>
+    <div class="row" style="gap:8px"><label class="sr" for="mx-amount">Tutar</label><div class="money-in"><input id="mx-amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0" data-draft="mxAmount" value="${esc(S.ui.drafts.mxAmount || '')}"><span>₺</span></div>
+      <input class="field grow" type="text" data-draft="mxNote" value="${esc(S.ui.drafts.mxNote || '')}" placeholder="Not (isteğe bağlı)" aria-label="Not"></div>
+    <div class="mcats">${catBtns}</div>
+    <div class="col" style="gap:6px"><span class="label">Bu harcama… <span class="sub" style="font-weight:500">(isteğe bağlı)</span></span><div class="row" style="gap:6px;flex-wrap:wrap">${whyBtns}</div></div>
+    <button type="button" class="btn btn-dark" data-act="mxAdd">${ic('plus', 18, 2.4)}Kaydet</button>
+    <div class="col divider" style="gap:10px"><div class="card-h"><span class="label">Bugün</span><b style="font-size:14px">${fmtTL(daySpend(d))}</b></div>${todayList || '<p class="empty">Bugün harcama yok.</p>'}</div></section>`;
+  // ay özeti
+  const avail = ms.income - ms.fixed - ms.savedMonth;
+  const pct = avail > 0 ? Math.round(ms.spent / avail * 100) : 0;
+  const secMonth = `<section class="card" aria-label="Ay özeti"><div class="card-h"><h2>${esc(monthLabel(k))}</h2><span class="hint">${ms.daysLeft} gün kaldı</span></div>
+    ${ms.income ? `<div class="msum"><div><span>Gelir</span><b>${fmtTL(ms.income)}</b></div><div><span>Sabit giderler</span><b>−${fmtTL(ms.fixed)}</b></div><div><span>Birikime ayrılan</span><b>−${fmtTL(ms.savedMonth)}</b></div><div><span>Harcanan</span><b>−${fmtTL(ms.spent)}</b></div></div>
+      <div class="bar" style="height:10px"><div style="height:10px;width:${clamp(pct, 0, 100)}%;background:${pct > 100 ? '#B91C1C' : pct > 80 ? '#D97706' : '#15803D'}"></div></div>
+      <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px"><span style="font-size:22px;font-weight:800;color:${ms.left < 0 ? '#B91C1C' : '#111827'}">${fmtTL(ms.left)} <span class="sub" style="font-size:13px;font-weight:600">${ms.left < 0 ? 'aşıldı' : 'kaldı'}</span></span><span class="sub" style="font-size:13px">${ms.left > 0 ? 'Günde ~' + fmtTL(ms.perDay) + ' harcayabilirsin' : ''}</span></div>`
+      : `<div class="col" style="gap:4px"><span style="font-size:22px;font-weight:800">${fmtTL(ms.spent)}</span><span class="sub">bu ay harcandı · Kalanı görmek için aşağıya gelirini ekle</span></div>`}</section>`;
+  // kategoriler ve limitler
+  const byCat = {}; ms.ex.forEach((e) => { byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; });
+  const catRows = m.categories.slice().sort((a2, b2) => (byCat[b2.id] || 0) - (byCat[a2.id] || 0)).map((c2) => { const sp = byCat[c2.id] || 0; const lim = c2.limit || 0; const p2 = lim ? sp / lim * 100 : 0; const [fg] = col(c2.color);
+    const barC = lim ? (p2 > 100 ? '#B91C1C' : p2 >= 80 ? '#D97706' : fg) : fg; const maxSp = Math.max(1, ...Object.values(byCat));
+    return `<div class="col" style="gap:5px"><div class="row" style="gap:8px">${icoBox(c2.icon, c2.color, 28, 15)}<span class="grow" style="font-size:13px;font-weight:700">${esc(c2.name)}</span><span style="font-size:13px;font-weight:800;color:${lim && p2 > 100 ? '#B91C1C' : '#111827'}">${fmtTL(sp)}</span><label class="row sub" style="gap:4px">/ <input class="field" style="width:84px;height:32px;font-size:12.5px;padding:0 8px" type="number" inputmode="numeric" min="0" placeholder="limit" value="${lim || ''}" data-change="mxLimit" data-id="${esc(c2.id)}" aria-label="${esc(c2.name)} aylık limit"> ₺</label></div>
+      <div class="bar" style="height:6px"><div style="height:6px;width:${clamp(lim ? p2 : sp / maxSp * 100, 0, 100)}%;background:${barC}"></div></div>${lim && p2 >= 80 ? `<span class="sub" style="color:${p2 > 100 ? '#B91C1C' : '#B45309'};font-weight:700">${p2 > 100 ? 'Limit ' + fmtTL(sp - lim) + ' aşıldı' : 'Limitin %' + Math.round(p2) + '’i doldu'}</span>` : ''}</div>`; }).join('');
+  const secCats = `<section class="card" aria-label="Kategoriler"><div class="card-h"><h2>Kategoriler ve limitler</h2><span class="hint">bu ay · limit boşsa sınırsız</span></div>${catRows}
+    <div class="row divider" style="gap:8px"><input class="field dashed grow" type="text" data-draft="mxNewCat" value="${esc(S.ui.drafts.mxNewCat || '')}" placeholder="Yeni kategori (örn. Evcil hayvan)" aria-label="Yeni kategori adı"><button type="button" class="btn btn-dark btn-sm" data-act="mxAddCat">Ekle</button></div></section>`;
+  // duygu dağılımı
+  const byWhy = {}; ms.ex.forEach((e) => { if (e.why) byWhy[e.why] = (byWhy[e.why] || 0) + e.amount; }); const whyTotal = Object.values(byWhy).reduce((a2, b2) => a2 + b2, 0);
+  const secWhy = `<section class="card" aria-label="Harcama nedenleri"><div class="card-h"><h2>Neden harcadım?</h2><span class="hint">bu ay · işaretlenenler</span></div>${whyTotal ? `<div class="stack">${WHY.filter(([id]) => byWhy[id]).map(([id, l, c2]) => `<span style="width:${byWhy[id] / whyTotal * 100}%;background:${col(c2)[0]}" title="${l}: ${fmtTL(byWhy[id])}"></span>`).join('')}</div>
+    <div class="col" style="gap:6px">${WHY.map(([id, l, c2]) => `<div class="row" style="gap:8px;font-size:13px"><span style="width:10px;height:10px;border-radius:3px;background:${col(c2)[0]}"></span><span class="grow">${l}</span><b>${fmtTL(byWhy[id] || 0)}</b><span class="sub" style="width:40px;text-align:right">%${whyTotal ? Math.round((byWhy[id] || 0) / whyTotal * 100) : 0}</span></div>`).join('')}</div>` : '<p class="empty">Harcama eklerken “İhtiyaç / İstek / Stres / Plansız” seçersen dağılım burada görünür.</p>'}</section>`;
+  // birikim
+  const saved = (gid) => m.savingsLog.filter((l) => l.goal === gid).reduce((a2, l) => a2 + l.amount, 0);
+  const goals = m.savings.map((g) => { const sv = saved(g.id); const p2 = g.target ? sv / g.target * 100 : 0; let need = '';
+    if (g.deadline && sv < g.target) { const dl = dateObj(g.deadline); const now = dateObj(k); const months = Math.max(1, (dl.getFullYear() - now.getFullYear()) * 12 + dl.getMonth() - now.getMonth()); need = 'Ayda ~' + fmtTL((g.target - sv) / months) + ' gerekiyor'; }
+    return `<div class="col" style="gap:6px;padding-bottom:12px;border-bottom:1px solid var(--line2)"><div class="row" style="gap:8px">${icoBox('piggy', 'amber', 30, 16)}<div class="col grow"><span class="name">${esc(g.name)}</span><span class="sub">${g.deadline ? 'Hedef tarih: ' + esc(longDate(g.deadline).split(', ')[1]) + ' ' + g.deadline.slice(0, 4) : 'Tarih yok'}${need ? ' · ' + need : ''}</span></div><button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="mxGoalDel" data-id="${esc(g.id)}" aria-label="Birikim hedefini sil">${ic('x', 15, 2)}</button></div>
+      <div class="row" style="justify-content:space-between"><b style="font-size:16px">${fmtTL(sv)}</b><span class="sub">/ ${fmtTL(g.target)} · %${Math.round(p2)}</span></div><div class="bar" style="height:8px"><div style="height:8px;width:${clamp(p2, 0, 100)}%;background:#B45309"></div></div>
+      <div class="row" style="gap:6px"><input class="field" style="width:120px" type="number" inputmode="decimal" min="0" placeholder="Tutar" data-draft="mxSave_${esc(g.id)}" value="${esc(S.ui.drafts['mxSave_' + g.id] || '')}" aria-label="${esc(g.name)} için eklenecek tutar"><button type="button" class="btn btn-sm" style="background:#B45309;color:#fff" data-act="mxSave" data-id="${esc(g.id)}">${ic('plus', 14, 2.6)}Biriktirdim</button></div></div>`; }).join('');
+  const secSave = `<section class="card" aria-label="Birikim hedefleri"><div class="card-h"><h2>Birikim hedefleri</h2><span class="hint">${m.savings.length ? 'bu ay ' + fmtTL(ms.savedMonth) + ' ayrıldı' : ''}</span></div>${goals || '<p class="empty">Henüz birikim hedefi yok.</p>'}
+    <div class="col" style="gap:8px"><span class="label">Yeni birikim hedefi</span><div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr);gap:6px"><input class="field" type="text" data-draft="mxGoalName" value="${esc(S.ui.drafts.mxGoalName || '')}" placeholder="örn. Tatil" aria-label="Hedef adı"><input class="field" type="number" inputmode="numeric" min="0" data-draft="mxGoalTarget" value="${esc(S.ui.drafts.mxGoalTarget || '')}" placeholder="Tutar ₺" aria-label="Hedef tutar"><input class="field" type="date" data-draft="mxGoalDate" value="${esc(S.ui.drafts.mxGoalDate || '')}" aria-label="Hedef tarih"></div><button type="button" class="btn btn-ghost btn-sm" data-act="mxGoalAdd">${ic('plus', 14, 2.4)}Hedef ekle</button></div></section>`;
+  // gelir ve sabit giderler
+  const rec = (kind) => m.recurring.filter((r) => r.kind === kind).map((r) => `<div class="row" style="gap:8px;min-height:36px">${icoBox(kind === 'income' ? 'wallet' : 'repeat', kind === 'income' ? 'green' : 'gray', 28, 15)}<span class="grow" style="font-size:13px;font-weight:600">${esc(r.name)}${r.day ? ` <span class="sub">· her ayın ${r.day}’i</span>` : ''}</span><b style="font-size:13px;color:${kind === 'income' ? '#15803D' : '#111827'}">${kind === 'income' ? '+' : '−'}${fmtTL(r.amount)}</b><button type="button" class="btn-icon" style="border:0;color:#6B7280;width:32px;height:32px" data-act="mxRecDel" data-id="${esc(r.id)}" aria-label="Sil">${ic('x', 14, 2)}</button></div>`).join('');
+  const rk = S.ui.mxRecKind || 'fixed';
+  const secRec = `<section class="card" aria-label="Gelir ve sabit giderler"><div class="card-h"><h2>Gelir ve sabit giderler</h2><span class="hint">her ay tekrarlar</span></div>
+    <span class="label">Gelir</span>${rec('income') || '<p class="sub">Henüz gelir eklenmedi.</p>'}
+    <span class="label" style="margin-top:4px">Sabit giderler</span>${rec('fixed') || '<p class="sub">Kira, faturalar, abonelikler…</p>'}
+    <div class="col divider" style="gap:8px"><div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))"><button type="button" data-act="mxRecKind" data-v="income" aria-pressed="${rk === 'income'}">Gelir</button><button type="button" data-act="mxRecKind" data-v="fixed" aria-pressed="${rk === 'fixed'}">Sabit gider</button></div>
+      <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 70px;gap:6px"><input class="field" type="text" data-draft="mxRecName" value="${esc(S.ui.drafts.mxRecName || '')}" placeholder="${rk === 'income' ? 'örn. Maaş' : 'örn. Kira'}" aria-label="Ad"><input class="field" type="number" inputmode="numeric" min="0" data-draft="mxRecAmount" value="${esc(S.ui.drafts.mxRecAmount || '')}" placeholder="Tutar ₺" aria-label="Tutar"><input class="field" type="number" inputmode="numeric" min="1" max="31" data-draft="mxRecDay" value="${esc(S.ui.drafts.mxRecDay || '')}" placeholder="Gün" aria-label="Ayın günü"></div>
+      <button type="button" class="btn btn-ghost btn-sm" data-act="mxRecAdd">${ic('plus', 14, 2.4)}Ekle</button></div></section>`;
+  const tabs = `<nav class="subnav"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a></nav>`;
+  if (!isDesktop()) return `${tabs}${topBar('Maddi', monthLabel(k))}<div class="grid-cards">${secAdd}${secMonth}${secCats}${secWhy}${secSave}${secRec}</div>`;
+  const kpi = (icon, color, label, value, sub) => { const [fg, bg] = col(color); return `<div class="kpi"><div class="row" style="gap:8px"><span class="chip-ic" style="width:28px;height:28px;border-radius:8px;background:${bg};color:${fg}">${ic(icon, 15, 2)}</span><span class="kpi-l">${label}</span></div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`; };
+  const kpis = [kpi('wallet', 'gray', 'Bugün', fmtTL(daySpend(d)), (d.expenses || []).length + ' harcama'), kpi('cart', 'orange', 'Bu ay harcanan', fmtTL(ms.spent), ms.ex.length + ' harcama'),
+    kpi('coin', ms.left < 0 ? 'pink' : 'green', 'Kalan', ms.income ? fmtTL(ms.left) : '—', ms.income ? (ms.left > 0 ? 'günde ~' + fmtTL(ms.perDay) : 'bütçe aşıldı') : 'gelir eklenmedi'),
+    kpi('piggy', 'amber', 'Bu ay birikim', fmtTL(ms.savedMonth), m.savings.length + ' hedef'), kpi('heart', 'pink', 'Stres harcaması', fmtTL(byWhy.stres || 0), 'bu ay')].join('');
+  return `${tabs}<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(monthLabel(k))} · ${ms.daysLeft} gün kaldı</span><h1>Maddi</h1></div></header>
+    <div class="kpis">${kpis}</div><div class="dash"><div class="dash-col">${secAdd}${secCats}</div><div class="dash-col">${secMonth}${secWhy}${secSave}${secRec}</div></div>`;
+}
 function viewArea(id) {
+  if (id === 'maddi') return viewMoney();
   const a = S.config.areas.find((x) => x.id === id);
   if (!a) return `${topBar('Bulunamadı', '')}<a href="#home">Alanlara dön</a>`;
   const k = todayKey(); const d = getDay(k); const [fg, bg] = col(a.color);
@@ -892,6 +994,13 @@ function compare(keys, groupFn, metricFn) {
 }
 function insightCard(def, keys) {
   const { a, b } = compare(keys, def.group, def.metric);
+  if (def.unit === 'tl' && a.length && b.length) {
+    const ma = avg(a), mb = avg(b), diff = ma - mb; const few = a.length < 5 || b.length < 5; const strong = Math.abs(diff) >= Math.max(100, 0.25 * Math.max(ma, mb));
+    const [tag, tbg, tfg] = few ? ['Az veri', '#FEF3C7', '#92400E'] : strong ? ['Belirgin', '#111827', '#fff'] : ['Zayıf', '#F3F4F6', '#374151'];
+    const max = Math.max(ma, mb, 1) * 1.1;
+    const row = (label, mm, n, color) => `<div class="col" style="gap:4px"><div class="row" style="justify-content:space-between;font-size:13px"><span style="color:#374151;font-weight:600">${esc(label)}</span><span style="font-weight:800">${fmtTL(mm)} <span style="font-weight:500;color:#4B5563">· ${n} gün</span></span></div><div style="height:10px;border-radius:99px;background:#F0F1F3"><div style="height:10px;border-radius:99px;background:${color};width:${Math.round(mm / max * 100)}%"></div></div></div>`;
+    return `<article class="card ins-card"><div class="row">${icoBox(def.icon, def.color)}<span class="sub" style="font-weight:700;font-size:13px">${esc(def.when)}</span><span class="badge" style="background:${tbg};color:${tfg}">${tag}</span></div><h3>${esc(def.subject)} günde ortalama ${fmtTL(Math.abs(diff))} ${diff >= 0 ? 'daha fazla' : 'daha az'} harcadın.</h3>${row(def.labels[0], ma, a.length, '#111827')}${row(def.labels[1], mb, b.length, '#9CA3AF')}<span class="sub">Günlük toplam harcama</span></article>`;
+  }
   const isSleep = def.unit === 'sa'; const max = isSleep ? 10 : 5;
   const head = `<div class="row">${icoBox(def.icon, def.color)}<span class="sub" style="font-weight:700;font-size:13px">${esc(def.when)}</span>`;
   if (!a.length || !b.length) {
@@ -919,6 +1028,7 @@ function viewInsights() {
     { icon: 'cube', color: 'pink', when: 'Rafine şeker → mod', title: 'Rafine şeker olan ve olmayan günlerde modun', subject: 'Rafine şeker yemediğin günler', labels: ['Rafine şeker yok', 'Rafine şeker var'], group: (k) => { const v = (s(k) || {}).sugar; return v == null ? null : v === 0; }, metric: mood, unit: 'p' },
     { icon: 'turk', color: 'brown', when: 'Kahve sayısı → mod', title: 'Az ve çok kahve içtiğin günlerde modun', subject: 'En fazla 2 kahve içtiğin günler', labels: ['En fazla 2 kahve', '3 ve üstü kahve'], group: (k) => { const v = (s(k) || {}).coffee; return v == null ? null : v < 3; }, metric: mood, unit: 'p' },
     { icon: 'run', color: 'orange', when: 'Spor → mod', title: 'Spor yaptığın ve yapmadığın günlerde modun', subject: 'Spor yaptığın günler', labels: ['Spor yaptım', 'Spor yok'], group: (k) => (s(k) ? s(k).hasSport : null), metric: mood, unit: 'p' },
+    { icon: 'wallet', color: 'pink', when: 'Mod → harcama', title: 'Modun düşük ve iyi olduğu günlerde harcaman', subject: 'Modunun düşük olduğu günlerde', labels: ['Mod düşük (1–2)', 'Mod iyi (4–5)'], group: (k) => { const x = s(k); if (!x || x.mood == null || !(S.days[k].expenses || []).length) return null; return x.mood <= 2.5 ? true : x.mood >= 3.5 ? false : null; }, metric: (k) => (s(k) || {}).spend, unit: 'tl' },
     { icon: 'kapsul', color: 'sky', when: 'Magnezyum → o gece uyku', title: 'Magnezyum aldığın günlerin gecesinde uykun', subject: 'Magnezyum aldığın günlerin gecesinde', labels: ['Magnezyum aldım', 'Almadım'], group: (k) => (s(k) || {}).mg, metric: (k) => (next(k) || {}).sleepH, unit: 'sa' }
   ];
   const timeDefs = [
@@ -1133,6 +1243,26 @@ const ACT = {
   goalInc: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal] || (d.goals[ds.goal] = { n: 0, times: [] }); v.n += 1; v.times.push(nowHM()); }),
   goalDec: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal]; if (v && v.n > 0) { v.n -= 1; v.times.pop(); } }),
   goalCheck: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal]; if (v && v.n) delete d.goals[ds.goal]; else d.goals[ds.goal] = { n: 1, times: [nowHM()] }; }),
+  // maddi
+  mxCat: (ds) => { S.ui.mx.cat = ds.v; render(); },
+  mxWhy: (ds) => { S.ui.mx.why = S.ui.mx.why === ds.v ? null : ds.v; render(); },
+  mxAdd: () => {
+    const amt = parseFloat(String(S.ui.drafts.mxAmount || '').replace(',', '.'));
+    if (!(amt > 0)) { toast('Önce tutarı yaz.'); const el = document.getElementById('mx-amount'); if (el) el.focus(); return; }
+    const e = { id: uid('e'), t: nowHM(), amount: Math.round(amt * 100) / 100, cat: S.ui.mx.cat || 'diger', why: S.ui.mx.why || null, note: draft('mxNote') };
+    clearDraft('mxAmount'); clearDraft('mxNote'); S.ui.mx.why = null;
+    mutDay(T(), (d) => { d.expenses = d.expenses || []; d.expenses.push(e); });
+    const lim = (S.config.money.categories.find((c) => c.id === e.cat) || {}).limit;
+    if (lim) { const sp = monthExpenses(T()).filter((x) => x.cat === e.cat).reduce((a, x) => a + x.amount, 0); if (sp > lim) toast('Kaydedildi. Bu kategoride aylık limit aşıldı.'); else if (sp >= lim * 0.8) toast('Kaydedildi. Limitin %' + Math.round(sp / lim * 100) + '’i doldu.'); else toast('Kaydedildi.'); } else toast('Kaydedildi.');
+  },
+  mxDel: (ds) => { if (confirm('Bu harcama silinsin mi?')) mutDay(T(), (d) => { d.expenses = (d.expenses || []).filter((x) => x.id !== ds.id); }); },
+  mxAddCat: () => { const nm = draft('mxNewCat'); if (!nm) return; clearDraft('mxNewCat'); const id = uid('c'); S.ui.mx.cat = id; mutCfg((c) => { c.money.categories.push({ id, name: nm, icon: 'dot', color: 'stone', limit: 0 }); }); },
+  mxGoalAdd: () => { const nm = draft('mxGoalName'); const tg = parseFloat(S.ui.drafts.mxGoalTarget || ''); if (!nm || !(tg > 0)) { toast('Hedefin adını ve tutarını yaz.'); return; } const dl = S.ui.drafts.mxGoalDate || ''; clearDraft('mxGoalName'); clearDraft('mxGoalTarget'); clearDraft('mxGoalDate'); mutCfg((c) => { c.money.savings.push({ id: uid('sv'), name: nm, target: tg, deadline: dl }); }); },
+  mxGoalDel: (ds) => { if (confirm('Bu birikim hedefi ve kayıtları silinsin mi?')) mutCfg((c) => { c.money.savings = c.money.savings.filter((g) => g.id !== ds.id); c.money.savingsLog = c.money.savingsLog.filter((l) => l.goal !== ds.id); }); },
+  mxSave: (ds) => { const key = 'mxSave_' + ds.id; const amt = parseFloat(String(S.ui.drafts[key] || '').replace(',', '.')); if (!(amt > 0)) { toast('Biriktirdiğin tutarı yaz.'); return; } clearDraft(key); mutCfg((c) => { c.money.savingsLog.push({ id: uid('sl'), goal: ds.id, amount: amt, date: T() }); }); toast('Birikim eklendi.'); },
+  mxRecKind: (ds) => { S.ui.mxRecKind = ds.v; render(); },
+  mxRecAdd: () => { const nm = draft('mxRecName'); const amt = parseFloat(S.ui.drafts.mxRecAmount || ''); if (!nm || !(amt > 0)) { toast('Ad ve tutar gir.'); return; } const day = parseInt(S.ui.drafts.mxRecDay || '', 10); const kind = S.ui.mxRecKind || 'fixed'; clearDraft('mxRecName'); clearDraft('mxRecAmount'); clearDraft('mxRecDay'); mutCfg((c) => { c.money.recurring.push({ id: uid('r'), kind, name: nm, amount: amt, day: day >= 1 && day <= 31 ? day : null }); }); },
+  mxRecDel: (ds) => { if (confirm('Silinsin mi?')) mutCfg((c) => { c.money.recurring = c.money.recurring.filter((r) => r.id !== ds.id); }); },
   // ayarlar
   pilDay: (ds) => mutCfg((c) => { const v = +ds.v; const a = new Set(c.sportGoal.pilDays || []); if (a.has(v)) a.delete(v); else a.add(v); c.sportGoal.pilDays = [...a]; }),
   listDel: (ds) => { if (!confirm('Listeden kaldırılsın mı?')) return; mutCfg((c) => { c[ds.list] = c[ds.list].filter((x) => x.id !== ds.id); }); }
@@ -1149,6 +1279,7 @@ const CHG = {
   prof: (v, ds) => mutCfg((c) => { c.profile = c.profile || {}; const f = ds.field; c.profile[f] = f === 'height' ? (parseInt(v, 10) || null) : f === 'activity' ? parseFloat(v) : v; }),
   snackTime: (v, ds) => mutDay(T(), (d) => { const sn = (d.snacks || []).find((x) => x.id === ds.id); if (sn && v) sn.t = v; }),
   snackName: (v, ds) => mutDay(T(), (d) => { const sn = (d.snacks || []).find((x) => x.id === ds.id); if (sn) sn.name = v; }),
+  mxLimit: (v, ds) => mutCfg((c) => { const cat = c.money.categories.find((x) => x.id === ds.id); if (cat) cat.limit = Math.max(0, parseInt(v, 10) || 0); }),
   pilTime: (v) => { if (v) mutCfg((c) => { c.sportGoal.pilTime = v; }); },
   cfgNum: (v, ds) => { const n = parseInt(v, 10); if (isNaN(n)) return; mutCfg((c) => { const parts = ds.path.split('.'); let o = c; for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]]; o[parts[parts.length - 1]] = Math.max(0, n); }); }
 };
@@ -1165,7 +1296,7 @@ document.addEventListener('input', (e) => { const el = e.target; if (el.dataset 
 document.addEventListener('change', (e) => { const el = e.target; if (el.dataset && el.dataset.change && CHG[el.dataset.change]) CHG[el.dataset.change](el.value, el.dataset, el); });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' || !e.target.dataset || !e.target.dataset.draft || e.target.tagName === 'TEXTAREA') return;
-  const map = { newDrink: 'addDrink', newSupp: 'addSupp', newAct: 'addAct', newMove: 'addMove', newArea: 'addArea' };
+  const map = { newDrink: 'addDrink', newSupp: 'addSupp', newAct: 'addAct', newMove: 'addMove', newArea: 'addArea', mxAmount: 'mxAdd', mxNote: 'mxAdd', mxNewCat: 'mxAddCat' };
   const a = map[e.target.dataset.draft]; if (a) { e.preventDefault(); ACT[a]({}); }
 });
 document.addEventListener('toggle', (e) => { const el = e.target; if (el.dataset && el.dataset.keep) S.ui.open[el.dataset.keep] = el.open; }, true);
@@ -1189,7 +1320,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ================= CSV ================= */
 function exportCsv() {
   const c = S.config; const keys = Object.keys(S.days).sort();
-  const head = ['tarih', 'mod_1_5', 'uyku_saat', 'yatis_onceki_gece', 'kalkis', 'su_bardak', 'su_saatleri', 'icecekler', 'kahve_sayisi', 'takviyeler', 'kahvalti', 'ogle', 'aksam', 'ara_ogun', 'spor_dk', 'spor_detay', 'tekrarlar', 'notlar', 'kilo'];
+  const head = ['tarih', 'mod_1_5', 'uyku_saat', 'yatis_onceki_gece', 'kalkis', 'su_bardak', 'su_saatleri', 'icecekler', 'kahve_sayisi', 'takviyeler', 'kahvalti', 'ogle', 'aksam', 'ara_ogun', 'spor_dk', 'spor_detay', 'tekrarlar', 'notlar', 'kilo', 'harcama_tl', 'harcamalar'];
   const cell = (v) => { const s = v == null ? '' : String(v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const mealStr = (r) => { if (!r) return ''; if (r.skip) return 'yemedim'; const m = NUTS.filter((n) => (r.marks || {})[n.k]).map((n) => n.short); return [r.time || '', m.join('+')].filter(Boolean).join(' '); };
   const rows = keys.map((k) => {
@@ -1200,7 +1331,7 @@ function exportCsv() {
       mealStr(d.meals.k), mealStr(d.meals.o), mealStr(d.meals.a), [d.meals.x ? mealStr(d.meals.x) : ''].concat((d.snacks || []).map((sn) => sn.t + ' ' + sn.name + (NUTS.filter((n) => (sn.marks || {})[n.k]).length ? ' ' + NUTS.filter((n) => (sn.marks || {})[n.k]).map((n) => n.short).join('+') : ''))).filter(Boolean).join(' | '),
       s.sportMin || 0, d.sport.map((l) => (l.name || l.act) + ' ' + (l.start || '') + '-' + (l.end || '') + ' ' + l.min + 'dk ' + INTENS[l.intensity ?? 1]).join(' | '),
       d.reps.map((r) => ((c.moves.find((x) => x.id === r.id) || {}).name || r.id) + ' ' + r.n + ' ' + r.t).join(' | '),
-      d.notes.map((n) => n.t + ' ' + (n.mood != null ? MOODS[n.mood].label : '') + ' ' + (n.tags || []).join('/') + ' ' + (n.text || '')).join(' | '), d.weight != null ? String(d.weight).replace('.', ',') : ''].map(cell).join(',');
+      d.notes.map((n) => n.t + ' ' + (n.mood != null ? MOODS[n.mood].label : '') + ' ' + (n.tags || []).join('/') + ' ' + (n.text || '')).join(' | '), d.weight != null ? String(d.weight).replace('.', ',') : '', daySpend(d) || '', (d.expenses || []).map((e) => e.t + ' ' + (((c.money || {}).categories || []).find((x) => x.id === e.cat) || {}).name + ' ' + e.amount + (e.why ? ' ' + e.why : '') + (e.note ? ' ' + e.note : '')).join(' | ')].map(cell).join(',');
   });
   const blob = new Blob(['﻿' + head.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'hedeflerim-' + todayKey() + '.csv'; document.body.appendChild(a); a.click(); a.remove();
