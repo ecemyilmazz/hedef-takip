@@ -266,3 +266,4 @@ body { font-size: 14px; }
   .dash-col + .dash-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 }
 @media (min-width: 1024px) and (max-width: 1199px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #FFF7ED; border: 1px solid #FDBA74; color: #9A3412; border-radius: 14px; padding: 10px 12px; font-size: 13.5px; font-weight: 600; }

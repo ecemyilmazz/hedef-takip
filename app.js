@@ -141,7 +141,7 @@ function defaultConfig() {
     v: 1, updatedAt: 0, waterGoal: 8,
     profile: { sex: 'f', height: null, birth: '', activity: 1.375 },
     nutGoals: { p: 3, y: 2, c: 3, s: 0, u: 1 },
-    sportGoal: { pilGoal: 2, pilMin: 40, weekMin: 150 },
+    sportGoal: { pilGoal: 2, pilMin: 40, weekMin: 150, pilDays: [1, 4], pilTime: '20:00' },
     drinks: [
       { id: 'turk', name: 'Türk kahvesi', icon: 'turk', color: 'brown', variants: ['Tek', 'Duble'], coffee: true },
       { id: 'filtre', name: 'Filtre kahve', icon: 'filtre', color: 'stone', coffee: true },
@@ -426,6 +426,17 @@ function profileFields(p, weightVal) {
   </div>
   <label class="col label" style="gap:4px">Hareket düzeyi<select class="field" data-change="prof" data-field="activity">${ACTIVITY.map(([v, l]) => `<option value="${v}" ${Number(p.activity || 1.375) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
 }
+// pilates günü geçtiyse ve işaretlenmediyse uyarı
+function pilatesBanner() {
+  const sg = S.config.sportGoal; const days = sg.pilDays || [];
+  const now = new Date(); const k = todayKey(); const d = getDay(k);
+  if (!days.includes(dateObj(k).getDay())) return '';
+  if ((d.sport || []).some((e) => e.act === 'pilates') || d.pilSkip) return '';
+  const due = (toMin(sg.pilTime || '20:00') || 0) + (sg.pilMin || 40);
+  let nowM = now.getHours() * 60 + now.getMinutes(); if (now.getHours() < DAY_START_HOUR) nowM += 1440;
+  if (nowM < due) return '';
+  return `<div class="banner" role="status">${ic('pilates', 18, 1.9)}<span class="grow">Bugün pilates günüydü (${esc(sg.pilTime || '20:00')}). Gittiysen işaretle.</span><button type="button" class="btn btn-sport btn-sm" data-act="sportQuick">Pilates yaptım</button><button type="button" class="btn btn-ghost btn-sm" data-act="pilSkip">Bugün gitmedim</button></div>`;
+}
 function weekKeys(key) { const d = dateObj(key); const dow = (d.getDay() + 6) % 7; const mon = addDays(key, -dow); return Array.from({ length: 7 }, (_, i) => addDays(mon, i)); }
 
 /* ================= görünüm parçaları ================= */
@@ -488,7 +499,7 @@ function viewHome() {
     return `<a class="area" href="#area:${esc(a.id)}"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">${esc(a.sub || '')}</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>${body}</a>`;
   }).join('');
   return `${topBar('Alanlarım', longDate(k))}
-    <p style="color:#4B5563;font-size:14px;margin-top:-8px">Merhaba${S.user.name ? ' ' + esc(S.user.name) : ''}. Hayatının her alanı için ayrı hedefler.</p>
+    ${pilatesBanner()}<p style="color:#4B5563;font-size:14px;margin-top:-8px">Merhaba${S.user.name ? ' ' + esc(S.user.name) : ''}. Hayatının her alanı için ayrı hedefler.</p>
     <div class="grid-cards grid-areas">${health}${others}</div>
     <div class="row" style="gap:8px">${addAreaForm()}</div>`;
 }
@@ -592,14 +603,14 @@ function viewTodayDesktop(k) {
   const agenda = dayAgenda(k);
   const flow = `<section class="card" aria-label="Bugünün akışı"><div class="card-h"><h2>Bugünün akışı</h2><span class="hint">${agenda.length} kayıt</span></div>${agenda.length ? `<ol class="flow">${agenda.map((a) => `<li><b>${esc(a.t)}</b><span class="flow-ic" style="color:${a.color}">${ic(a.icon, 15, 1.9)}</span><span class="flow-t">${esc(a.text)}</span></li>`).join('')}</ol>` : '<p class="empty">Kayıt yaptıkça gün burada saat sırasıyla birikir.</p>'}</section>`;
   return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>Bugün</h1></div><div class="quick" role="toolbar" aria-label="Hızlı kayıt">${quick}</div></header>
-    <div class="kpis">${kpis}</div>
+    ${pilatesBanner()}<div class="kpis">${kpis}</div>
     <div class="dash"><div class="dash-col">${meals}<div class="dash-2">${cardDrinks(k)}${cardSupps(k)}</div></div>
     <div class="dash-col">${cardMood(k)}${flow}${cardSleep(k)}${cardBody(k)}</div></div>`;
 }
 function viewToday() {
   const k = todayKey();
   if (isDesktop()) return viewTodayDesktop(k);
-  return `${healthTabs('today')}${topBar('Bugün', longDate(k))}
+  return `${healthTabs('today')}${topBar('Bugün', longDate(k))}${pilatesBanner()}
     <div class="grid-cards">${cardSleep(k)}${cardBody(k)}${cardWater(k)}${cardDrinks(k)}${cardSupps(k)}${cardMood(k)}${cardBalance(k)}${cardMeals(k)}</div>`;
 }
 function cardSleep(k) {
@@ -754,7 +765,7 @@ function viewSport() {
     return `<div class="row">${icoBox(a.icon, 'orange')}<div class="col grow"><span class="name">${esc(a.name || l.name)}</span><span class="sub">${l.start && l.end ? esc(l.start) + '–' + esc(l.end) + ' · ' : ''}${durText(l.min || 0)} · ${INTENS[l.intensity ?? 1]}</span></div>${m ? `<span class="chip-ic" style="width:30px;height:30px;background:${m.bg};color:${m.fg}" title="Sonra: ${m.label}">${ic(m.d, 18, 1.7)}</span>` : ''}<button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="sportDel" data-id="${esc(l.id)}" aria-label="Kaydı sil">${ic('x', 16, 2)}</button></div>`;
   }).join('');
   const unit = S.ui.newUnit || 'tekrar';
-  return `${healthTabs('sport')}${topBar('Spor', longDate(k))}
+  return `${healthTabs('sport')}${topBar('Spor', longDate(k))}${pilatesBanner()}
   <div class="grid-cards">
     <section class="card" aria-label="Bu hafta"><div class="card-h"><h2>Bu hafta</h2><span class="hint">Hedef: Pilates ${sg.pilGoal} × ${sg.pilMin} dk</span></div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
@@ -877,6 +888,8 @@ function viewSettings() {
     <section class="card"><div class="card-h"><h2 style="font-size:17px;font-weight:700">Vücut bilgilerim</h2><span class="hint">${bmrInfo().ready ? 'Bazal ' + fmtK(bmrInfo().bmr) + ' kcal/gün' : 'Bazal metabolizma için'}</span></div>${profileFields(c.profile || {})}<p class="sub">Kiloyu Bugün ekranındaki Vücut kartından gir.</p></section>
     <section class="card"><h2 style="font-size:17px;font-weight:700">Hedefler</h2>
       ${num('Günlük su (bardak)', 'waterGoal', 1, 30)}${num('Haftalık pilates (seans)', 'sportGoal.pilGoal', 0, 14)}${num('Pilates süresi (dk)', 'sportGoal.pilMin', 5, 180)}${num('Haftalık toplam spor (dk)', 'sportGoal.weekMin', 0, 2000)}
+      <div class="col" style="gap:6px"><span style="font-size:14px;font-weight:600">Pilates günleri</span><div class="row" style="gap:6px;flex-wrap:wrap">${[1, 2, 3, 4, 5, 6, 0].map((dw) => `<button type="button" class="pill" style="height:36px" data-act="pilDay" data-v="${dw}" aria-pressed="${(c.sportGoal.pilDays || []).includes(dw)}">${TR_D3[dw]}</button>`).join('')}</div></div>
+      <label class="row" style="justify-content:space-between;gap:12px;min-height:48px"><span style="font-size:14px;font-weight:600">Pilates saati</span><input class="field time" type="time" value="${esc(c.sportGoal.pilTime || '20:00')}" data-change="pilTime"></label>
       ${NUTS.map((n) => num(n.name + (n.limit ? ' (en fazla, öğün)' : ' (öğün)'), 'nutGoals.' + n.k, 0, 4)).join('')}</section>
     <section class="card"><h2 style="font-size:17px;font-weight:700">Listelerim</h2>${listEditor('İçecekler', 'drinks')}${listEditor('Takviyeler', 'supps')}${listEditor('Aktiviteler', 'acts')}${listEditor('Tekrarlı hareketler', 'moves')}
       <p class="sub">Yeni öğe eklemek için ilgili ekrandaki “Ekle” kutusunu kullan. Sildiğin öğenin geçmiş kayıtları silinmez.</p></section>
@@ -969,6 +982,7 @@ const ACT = {
     saveSport({ mode: 'idle', start: '', end: '', intensity: 1, feel: null });
   },
   sportQuick: () => { const m = S.config.sportGoal.pilMin; mutDay(T(), (d) => { d.sport.push({ id: uid('x'), act: 'pilates', name: 'Pilates', start: minsAgoHM(m), end: nowHM(), min: m, intensity: 1, feel: null }); }); toast('Pilates kaydedildi.'); },
+  pilSkip: () => mutDay(T(), (d) => { d.pilSkip = true; }),
   sportDel: (ds) => { if (confirm('Bu aktivite silinsin mi?')) mutDay(T(), (d) => { d.sport = d.sport.filter((x) => x.id !== ds.id); }); },
   toggleOpen: (ds) => { S.ui.open[ds.v] = !S.ui.open[ds.v]; render(); },
   addAct: () => { const nm = draft('newAct'); if (!nm) return; clearDraft('newAct'); S.ui.open.newAct = false; const id = uid('a'); S.sport.act = id; mutCfg((c) => { c.acts.push({ id, name: nm, icon: 'dot' }); }); },
@@ -997,6 +1011,7 @@ const ACT = {
   goalDec: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal]; if (v && v.n > 0) { v.n -= 1; v.times.pop(); } }),
   goalCheck: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal]; if (v && v.n) delete d.goals[ds.goal]; else d.goals[ds.goal] = { n: 1, times: [nowHM()] }; }),
   // ayarlar
+  pilDay: (ds) => mutCfg((c) => { const v = +ds.v; const a = new Set(c.sportGoal.pilDays || []); if (a.has(v)) a.delete(v); else a.add(v); c.sportGoal.pilDays = [...a]; }),
   listDel: (ds) => { if (!confirm('Listeden kaldırılsın mı?')) return; mutCfg((c) => { c[ds.list] = c[ds.list].filter((x) => x.id !== ds.id); }); }
 };
 const CHG = {
@@ -1009,6 +1024,7 @@ const CHG = {
   sportEndT: (v) => saveSport({ end: v }),
   weight: (v) => { const n = parseFloat(String(v).replace(',', '.')); mutDay(T(), (d) => { if (n >= 20 && n <= 400) d.weight = Math.round(n * 10) / 10; else delete d.weight; }); },
   prof: (v, ds) => mutCfg((c) => { c.profile = c.profile || {}; const f = ds.field; c.profile[f] = f === 'height' ? (parseInt(v, 10) || null) : f === 'activity' ? parseFloat(v) : v; }),
+  pilTime: (v) => { if (v) mutCfg((c) => { c.sportGoal.pilTime = v; }); },
   cfgNum: (v, ds) => { const n = parseInt(v, 10); if (isNaN(n)) return; mutCfg((c) => { const parts = ds.path.split('.'); let o = c; for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]]; o[parts[parts.length - 1]] = Math.max(0, n); }); }
 };
 
