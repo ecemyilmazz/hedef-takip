@@ -290,3 +290,20 @@ body { font-size: 14px; }
   .wgoal { position: absolute; left: 0; right: 0; border-top: 1.5px dashed #9CA3AF; }
   .dash .acts { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
 }
+/* içgörüler masaüstü */
+@media (min-width: 1024px) {
+  .ins-dash { grid-template-columns: minmax(0, 1.9fr) minmax(330px, 1fr); }
+  .ins-side .ins-card { padding: 14px; gap: 10px; }
+  .ins-side .ins-card h3 { font-size: 14.5px; }
+  .ins-dash .lanes { min-width: 0; }
+  .ins-dash .lane { grid-template-columns: 112px repeat(14, minmax(0, 1fr)); }
+  .ins-dash .tl { min-width: 0; }
+}
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .ins-dash .dash-col + .dash-col { display: flex; flex-direction: column; }
+  .ins-side { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .ins-side > .card-h { grid-column: 1 / -1; }
+}
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .dash.ins-dash { grid-template-columns: minmax(0, 1fr); }
+}

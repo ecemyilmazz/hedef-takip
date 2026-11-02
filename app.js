@@ -897,13 +897,30 @@ function viewInsights() {
     ${lane('Su', 'drop', '#1D4ED8', (k, x) => (x && x.water ? `<span style="color:#1D4ED8">${x.water}</span>` : '<span style="color:#9CA3AF">·</span>'))}
     ${lane('Spor (dk)', 'run', '#C2410C', (k, x) => (x && x.sportMin ? `<span style="color:#C2410C">${x.sportMin}</span>` : '<span style="color:#9CA3AF">·</span>'))}
   </div>`;
-  return `${topBar('İçgörüler', 'Mod ve hislerin neyle birlikte değişiyor?', `<button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 16, 2)}CSV indir</button>`)}
-    <div class="card" style="flex-direction:row;flex-wrap:wrap;align-items:center;border:1.5px dashed #D1D5DB;box-shadow:none">${ic('info', 18, 1.9, 'style="color:#4B5563"')}<span style="font-size:14px;color:#374151;flex:1 1 280px">${n < 14 ? `Şu ana kadar <b>${n} günlük</b> kayıt var. Güvenilir karşılaştırmalar için en az 14 gün kayıt öneririz; kartlar sen kayıt tuttukça dolacak.` : `<b>${n} günlük</b> kayıttan hesaplandı.`}</span><div class="row" style="flex:0 1 240px;gap:10px"><div class="bar grow"><div style="width:${Math.min(100, Math.round(n / 14 * 100))}%;background:#111827"></div></div><b style="font-size:13px;white-space:nowrap">${Math.min(n, 14)} / 14 gün</b></div></div>
-    <h2 class="big-h">Öne çıkanlar</h2><div class="grid-cards">${defs.map((d) => insightCard(d, keys)).join('')}</div>
-    <section class="card"><div class="card-h" style="flex-wrap:wrap"><h2 class="big-h">Gün gün yan yana</h2><span class="hint">Bir güne dokun, aşağıda o günün saat saat akışını gör</span></div><div class="scroll-x">${lanes}</div></section>
-    ${dayTimeline(sel)}
-    <h2 class="big-h">Saate bağlı ilişkiler</h2><div class="grid-cards">${timeDefs.map((d) => insightCard(d, keys)).join('')}</div>
-    <div class="card" style="flex-direction:row;gap:14px">${ic('info', 20, 1.9, 'style="color:#374151"')}<div class="col" style="gap:4px"><h3 style="font-size:15px;font-weight:700">Birlikte görünmek, sebep olmak demek değil</h3><p class="sub" style="font-size:14px;line-height:1.5">Kartlar sana nereye bakacağını söyler; kararı sen verirsin. Bir grupta 5 günden az kayıt varsa kart “Az veri” der.</p></div></div>`;
+  const secReady = `<div class="card" style="flex-direction:row;flex-wrap:wrap;align-items:center;border:1.5px dashed #D1D5DB;box-shadow:none">${ic('info', 18, 1.9, 'style="color:#4B5563"')}<span style="font-size:14px;color:#374151;flex:1 1 280px">${n < 14 ? `Şu ana kadar <b>${n} günlük</b> kayıt var. Güvenilir karşılaştırmalar için en az 14 gün kayıt öneririz; kartlar sen kayıt tuttukça dolacak.` : `<b>${n} günlük</b> kayıttan hesaplandı.`}</span><div class="row" style="flex:0 1 240px;gap:10px"><div class="bar grow"><div style="width:${Math.min(100, Math.round(n / 14 * 100))}%;background:#111827"></div></div><b style="font-size:13px;white-space:nowrap">${Math.min(n, 14)} / 14 gün</b></div></div>`;
+  const secCards = `<h2 class="big-h">Öne çıkanlar</h2><div class="grid-cards">${defs.map((d) => insightCard(d, keys)).join('')}</div>`;
+  const secLanes = `<section class="card"><div class="card-h" style="flex-wrap:wrap"><h2 class="big-h">Gün gün yan yana</h2><span class="hint">Bir güne dokun, aşağıda o günün saat saat akışını gör</span></div><div class="scroll-x">${lanes}</div></section>`;
+  const secTimeCards = `<h2 class="big-h">Saate bağlı ilişkiler</h2><div class="grid-cards">${timeDefs.map((d) => insightCard(d, keys)).join('')}</div>`;
+  const secCaution = `<div class="card" style="flex-direction:row;gap:14px">${ic('info', 20, 1.9, 'style="color:#374151"')}<div class="col" style="gap:4px"><h3 style="font-size:15px;font-weight:700">Birlikte görünmek, sebep olmak demek değil</h3><p class="sub" style="font-size:14px;line-height:1.5">Kartlar sana nereye bakacağını söyler; kararı sen verirsin. Bir grupta 5 günden az kayıt varsa kart “Az veri” der.</p></div></div>`;
+  const csvBtn = `<button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 16, 2)}CSV indir</button>`;
+  if (!isDesktop()) return `${topBar('İçgörüler', 'Mod ve hislerin neyle birlikte değişiyor?', csvBtn)}${secReady}${secCards}${secLanes}${dayTimeline(sel)}${secTimeCards}${secCaution}`;
+  // ---------- masaüstü ----------
+  const recent = last14.map((x) => s(x)).filter(Boolean);
+  const avgOf = (f) => { const xs = recent.map(f).filter((v) => v != null); return xs.length ? avg(xs) : null; };
+  const mAvg = avgOf((x) => x.mood); const slAvg = avgOf((x) => x.sleepH); const wAvg = avgOf((x) => (x.water || null)); const spDays = recent.filter((x) => x.hasSport).length;
+  const kpi = (icon, color, label, value, sub) => { const [fg, bg] = col(color); return `<div class="kpi"><div class="row" style="gap:8px"><span class="chip-ic" style="width:28px;height:28px;border-radius:8px;background:${bg};color:${fg}">${ic(icon, 15, 2)}</span><span class="kpi-l">${label}</span></div><div class="kpi-v">${value}</div><div class="kpi-s">${sub}</div></div>`; };
+  const moodFace = mAvg != null ? MOODS[clamp(Math.round(mAvg) - 1, 0, 4)] : null;
+  const kpis = [
+    kpi('chart', 'gray', 'Kayıtlı gün', `${n}<small> gün</small>`, n < 14 ? '14 güne ' + (14 - n) + ' gün kaldı' : 'Karşılaştırmalar hazır'),
+    kpi('heart', moodFace ? 'teal' : 'gray', 'Ortalama mod', mAvg != null ? fmt1(mAvg) + '<small> / 5</small>' : '—', moodFace ? moodFace.label + ' civarı · son 14 gün' : 'Mod seçtikçe dolar'),
+    kpi('moon', 'indigo', 'Ortalama uyku', slAvg != null ? fmt1(slAvg) + '<small> sa</small>' : '—', 'son 14 gün'),
+    kpi('drop', 'blue', 'Ortalama su', wAvg != null ? fmt1(wAvg) + '<small> bardak</small>' : '—', 'hedef ' + S.config.waterGoal + ' bardak'),
+    kpi('run', 'orange', 'Spor yapılan gün', `${spDays}<small> / 14</small>`, 'son 14 gün')
+  ].join('');
+  return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">Mod ve hislerin neyle birlikte değişiyor?</span><h1>İçgörüler</h1></div><div class="quick">${csvBtn}</div></header>
+    <div class="kpis">${kpis}</div>${n < 14 ? secReady : ''}
+    <div class="dash ins-dash"><div class="dash-col">${secLanes}${dayTimeline(sel)}<div class="card-h" style="padding:6px 2px 0"><h2 class="big-h">Saate bağlı ilişkiler</h2></div><div class="dash-2">${timeDefs.map((d) => insightCard(d, keys)).join('')}</div>${secCaution}</div>
+    <div class="dash-col ins-side"><div class="card-h" style="padding:0 2px"><h2 class="big-h">Öne çıkanlar</h2></div>${defs.map((d) => insightCard(d, keys)).join('')}</div></div>`;
 }
 function dayTimeline(k) {
   const d = getDay(k); const c = S.config;
