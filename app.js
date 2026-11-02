@@ -129,8 +129,28 @@ const NUTS = [
   { k: 'u', name: 'Rafine un', short: 'Rafine un', color: 'purple', limit: true, icon: 'bread' }
 ];
 const MEALS = [
-  { id: 'k', name: 'Kahvaltı' }, { id: 'o', name: 'Öğle' }, { id: 'a', name: 'Akşam' }, { id: 'x', name: 'Ara öğün' }
+  { id: 'k', name: 'Kahvaltı' }, { id: 'o', name: 'Öğle' }, { id: 'a', name: 'Akşam' }
 ];
+const SNACK_TYPES = ['Meyve', 'Kuruyemiş', 'Yoğurt', 'Tatlı', 'Atıştırmalık', 'Diğer'];
+// ana öğünler + ara öğünler (eski sabit "Ara öğün" kaydı da dahil)
+function eats(d) {
+  const out = MEALS.map((m) => { const r = (d.meals || {})[m.id] || {}; return { name: m.name, time: r.time, skip: !!r.skip, marks: r.marks || {}, main: m.id }; });
+  const lx = (d.meals || {}).x;
+  if (lx && !lx.skip && (lx.time || Object.values(lx.marks || {}).some(Boolean))) out.push({ name: 'Ara öğün', time: lx.time, skip: false, marks: lx.marks || {} });
+  (d.snacks || []).forEach((sn) => out.push({ name: sn.name || 'Ara öğün', time: sn.t, skip: false, marks: sn.marks || {}, snack: sn.id }));
+  return out;
+}
+const nutCount = (d, k) => eats(d).filter((e) => !e.skip && e.marks[k]).length;
+function snackSelect(sn) {
+  const opts = SNACK_TYPES.includes(sn.name) ? SNACK_TYPES : [sn.name].concat(SNACK_TYPES);
+  return `<select class="field" style="min-width:0;flex:1 1 auto;height:36px" data-change="snackName" data-id="${esc(sn.id)}" aria-label="Ara öğün türü">${opts.map((o) => `<option ${o === sn.name ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+}
+function snackChips(sn, h) {
+  return NUTS.map((nu) => { const on = !!(sn.marks || {})[nu.k]; const [fg, bg] = col(nu.color); return `<button type="button" class="nut ${nu.limit ? 'limit' : ''}" style="${h ? 'height:' + h + 'px;' : ''}${on ? `background:${bg};color:${fg};border-color:${fg}` : ''}" data-act="snackMark" data-id="${esc(sn.id)}" data-k="${nu.k}" aria-pressed="${on}" aria-label="${esc(sn.name)}: ${nu.name}">${ic(nu.icon, 17)}</button>`; });
+}
+function snackAddButtons() {
+  return `<div class="row" style="gap:6px;flex-wrap:wrap"><span class="sub" style="font-weight:700;margin-right:2px">+ Ara öğün:</span>${SNACK_TYPES.map((t) => `<button type="button" class="pill" style="height:34px" data-act="snackAdd" data-v="${t}">${t}</button>`).join('')}</div>`;
+}
 const FEELINGS = ['Enerjik', 'Huzurlu', 'Motive', 'Yorgun', 'Stresli', 'Kaygılı'];
 const INTENS = ['Hafif', 'Orta', 'Zor'];
 const GOAL_ICONS = ['target', 'book', 'lang', 'code', 'brief', 'star', 'music', 'pencil', 'coin', 'piggy', 'cart', 'heart', 'leaf', 'moon', 'flame', 'clock'];
@@ -178,7 +198,7 @@ function upgradeConfig(c) {
   return out;
 }
 function blankDay(key) {
-  return { date: key, updatedAt: 0, mood: null, sleep: {}, water: [], drinks: [], supps: {}, meals: {}, notes: [], sport: [], reps: [], goals: {} };
+  return { date: key, updatedAt: 0, mood: null, sleep: {}, water: [], drinks: [], supps: {}, meals: {}, snacks: [], notes: [], sport: [], reps: [], goals: {} };
 }
 
 /* ================= durum ================= */
@@ -303,7 +323,7 @@ function uniq(arr) { const seen = new Set(); return arr.filter((x) => { const k 
 function mergeDay(local, remote) {
   // iki cihazda aynı gün değiştiyse: listeleri birleştir, tekil alanlarda yerel olanı tut
   const out = Object.assign({}, remote, local);
-  ['water', 'drinks', 'notes', 'sport', 'reps'].forEach((k) => { out[k] = uniq([...(remote[k] || []), ...(local[k] || [])]); });
+  ['water', 'drinks', 'notes', 'sport', 'reps', 'snacks'].forEach((k) => { out[k] = uniq([...(remote[k] || []), ...(local[k] || [])]); });
   out.water.sort(); ['drinks', 'reps'].forEach((k) => out[k].sort((a, b) => String(a.t).localeCompare(String(b.t))));
   out.supps = Object.assign({}, remote.supps || {}, local.supps || {});
   out.meals = Object.assign({}, remote.meals || {}, local.meals || {});
@@ -391,8 +411,9 @@ function stats(k) {
   const m = d.meals || {};
   const kb = m.k;
   const bk = kb ? (kb.skip ? false : (kb.time || Object.values(kb.marks || {}).some(Boolean) ? true : null)) : null;
-  const mealsKnown = MEALS.some((x) => m[x.id] && (m[x.id].skip || m[x.id].time || Object.values(m[x.id].marks || {}).some(Boolean)));
-  const sugar = MEALS.filter((x) => m[x.id] && !m[x.id].skip && m[x.id].marks && m[x.id].marks.s).length;
+  const ev = eats(d);
+  const mealsKnown = ev.some((e) => e.skip || e.time || Object.values(e.marks).some(Boolean));
+  const sugar = ev.filter((e) => !e.skip && e.marks.s).length;
   const cids = coffeeIds();
   const coffees = (d.drinks || []).filter((x) => cids.has(x.id));
   const sl = sleepMinutes(k);
@@ -561,6 +582,7 @@ function dayAgenda(k) {
   d.water.forEach((t) => add(t, 'drop', '#1D4ED8', '1 bardak su'));
   d.drinks.forEach((e) => { const dk = c.drinks.find((x) => x.id === e.id) || { name: 'İçecek', icon: 'bardak', color: 'gray' }; add(e.t, dk.icon, col(dk.color)[0], dk.name + (e.v ? ' (' + e.v + ')' : '')); });
   MEALS.forEach((m) => { const r = d.meals[m.id]; if (r && !r.skip && r.time) { const marks = NUTS.filter((n) => (r.marks || {})[n.k]).map((n) => n.short.toLowerCase()); add(r.time, m.id === 'k' ? 'egg' : 'plate', '#C2410C', m.name + (marks.length ? ': ' + marks.join(', ') : '')); } });
+  (d.snacks || []).forEach((sn) => { const marks = NUTS.filter((n) => (sn.marks || {})[n.k]).map((n) => n.short.toLowerCase()); add(sn.t, 'leaf', '#15803D', 'Ara öğün · ' + sn.name + (marks.length ? ': ' + marks.join(', ') : '')); });
   Object.entries(d.supps).forEach(([id, t]) => { const sp = c.supps.find((x) => x.id === id) || { name: id, icon: 'kapsul', color: 'sky' }; add(t, sp.icon, col(sp.color)[0], sp.name); });
   d.sport.forEach((l) => { const a = c.acts.find((x) => x.id === l.act) || { name: l.name, icon: 'dot' }; add(l.start || l.end, a.icon, '#C2410C', a.name + ' · ' + durText(l.min || 0)); });
   d.reps.forEach((r) => { const mv = c.moves.find((x) => x.id === r.id) || { name: 'Hareket', icon: 'dot', unit: '' }; add(r.t, mv.icon, '#C2410C', mv.name + ' ' + r.n + ' ' + mv.unit); });
@@ -596,8 +618,9 @@ function viewTodayDesktop(k) {
     const cells = skip ? `<td colspan="${NUTS.length}"><div class="skip-box" style="height:36px">${ic('ban', 16, 1.9)}Bu öğünü atladım</div></td>`
       : NUTS.map((nu) => { const on = !!marks[nu.k]; const [fg, bg] = col(nu.color); return `<td><button type="button" class="nut ${nu.limit ? 'limit' : ''}" style="height:36px;${on ? `background:${bg};color:${fg};border-color:${fg}` : ''}" data-act="mark" data-meal="${m.id}" data-k="${nu.k}" aria-pressed="${on}" aria-label="${m.name}: ${nu.name}">${ic(nu.icon, 17)}</button></td>`; }).join('');
     return `<tr><th scope="row">${m.name}</th><td>${skip ? '' : `<input class="field time" style="height:36px;width:104px" type="time" value="${esc(r.time || '')}" data-change="mealTime" data-meal="${m.id}" aria-label="${m.name} saati">`}</td>${cells}<td style="text-align:right"><button type="button" class="btn btn-sm" style="height:36px;background:${skip ? '#111827' : '#fff'};color:${skip ? '#fff' : '#374151'};border:1px solid ${skip ? '#111827' : '#E8EAEE'}" data-act="mealSkip" data-meal="${m.id}" aria-pressed="${skip}">Yemedim</button></td></tr>`;
-  }).join('');
-  const foot = NUTS.map((nu) => { const cnt = MEALS.filter((m) => d.meals[m.id] && !d.meals[m.id].skip && (d.meals[m.id].marks || {})[nu.k]).length; const gv = g[nu.k]; const ok = nu.limit ? cnt <= gv : cnt >= gv; return `<td><span style="font-weight:800;color:${nu.limit ? (ok ? '#15803D' : '#B91C1C') : (ok ? '#15803D' : '#374151')}">${cnt}</span><span class="sub"> / ${nu.limit ? '≤' : ''}${gv}</span></td>`; }).join('');
+  }).join('') + (d.snacks || []).map((sn) => `<tr><th scope="row"><div class="row" style="gap:6px">${ic('leaf', 15, 1.9, 'style="color:#15803D"')}${snackSelect(sn)}</div></th><td><input class="field time" style="height:36px;width:104px" type="time" value="${esc(sn.t || '')}" data-change="snackTime" data-id="${esc(sn.id)}" aria-label="Ara öğün saati"></td>${snackChips(sn, 36).map((b) => `<td>${b}</td>`).join('')}<td style="text-align:right"><button type="button" class="btn-icon" style="height:36px;width:36px;border:0;color:#6B7280" data-act="snackDel" data-id="${esc(sn.id)}" aria-label="Ara öğünü sil">${ic('x', 15, 2)}</button></td></tr>`).join('')
+    + `<tr><td colspan="${NUTS.length + 3}" style="text-align:left;padding-top:6px">${snackAddButtons()}</td></tr>`;
+  const foot = NUTS.map((nu) => { const cnt = nutCount(d, nu.k); const gv = g[nu.k]; const ok = nu.limit ? cnt <= gv : cnt >= gv; return `<td><span style="font-weight:800;color:${nu.limit ? (ok ? '#15803D' : '#B91C1C') : (ok ? '#15803D' : '#374151')}">${cnt}</span><span class="sub"> / ${nu.limit ? '≤' : ''}${gv}</span></td>`; }).join('');
   const meals = `<section class="card" aria-label="Öğünler"><div class="card-h"><h2>Öğünler</h2><span class="hint">Yediklerine dokun · kesik çerçeve = sınırlanan</span></div>
     <div class="scroll-x"><table class="mtable"><thead><tr><th scope="col">Öğün</th><th scope="col">Saat</th>${head}<th></th></tr></thead><tbody>${body}</tbody><tfoot><tr><th scope="row">Günün dengesi</th><td></td>${foot}<td></td></tr></tfoot></table></div></section>`;
   const agenda = dayAgenda(k);
@@ -702,7 +725,7 @@ function cardMood(k) {
 function cardBalance(k) {
   const d = getDay(k); const g = S.config.nutGoals;
   const cells = NUTS.map((nu) => {
-    const c = MEALS.filter((m) => d.meals[m.id] && !d.meals[m.id].skip && (d.meals[m.id].marks || {})[nu.k]).length;
+    const c = nutCount(d, nu.k);
     const [fg, bg] = col(nu.color); const goal = g[nu.k];
     const value = nu.limit ? c + ' / ≤' + goal : c + ' / ' + goal;
     const status = nu.limit ? (c > goal ? '#B91C1C' : '#15803D') : (c >= goal ? '#15803D' : '#374151');
@@ -723,7 +746,8 @@ function cardMeals(k) {
       <button type="button" class="btn btn-sm" data-act="mealSkip" data-meal="${m.id}" aria-pressed="${skip}" style="flex-shrink:0;background:${skip ? '#111827' : '#fff'};color:${skip ? '#fff' : '#374151'};border:1.5px solid ${skip ? '#111827' : '#E5E7EB'}">Yemedim</button></div>
       ${skip ? `<div class="skip-box">${ic('ban', 16, 1.9)}Bu öğünü atladım</div>` : `<div class="nuts">${chips}</div>`}</div>`;
   }).join('');
-  return `<section class="card" aria-label="Öğünler" style="gap:4px"><div class="card-h" style="margin-bottom:6px"><h2>Öğünler</h2><span class="hint">Yediklerine dokun</span></div>${rows}</section>`;
+  const snacks = (d.snacks || []).map((sn) => `<div class="col" style="gap:10px;padding:12px 0;border-top:1px solid #F0F1F3"><div class="row" style="gap:8px"><span style="color:#15803D;display:flex">${ic('leaf', 16, 1.9)}</span>${snackSelect(sn)}<input class="field time" type="time" value="${esc(sn.t || '')}" data-change="snackTime" data-id="${esc(sn.id)}" aria-label="Ara öğün saati"><button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="snackDel" data-id="${esc(sn.id)}" aria-label="Ara öğünü sil">${ic('x', 15, 2)}</button></div><div class="nuts">${snackChips(sn).join('')}</div></div>`).join('');
+  return `<section class="card" aria-label="Öğünler" style="gap:4px"><div class="card-h" style="margin-bottom:6px"><h2>Öğünler</h2><span class="hint">Yediklerine dokun</span></div>${rows}${snacks}<div style="padding-top:12px;border-top:1px solid #F0F1F3">${snackAddButtons()}</div></section>`;
 }
 
 /* ---------- spor ---------- */
@@ -854,6 +878,7 @@ function dayTimeline(k) {
   const ev = (t, icon, fg, bg, tip) => (t ? { t, icon, fg, bg, tip: t + ' · ' + tip } : null);
   const meals = []; const sugar = [];
   MEALS.forEach((m) => { const r = d.meals[m.id]; if (r && !r.skip && r.time) { meals.push(ev(r.time, m.id === 'k' ? 'egg' : 'plate', '#374151', '#F3F4F6', m.name)); if (r.marks && r.marks.s) sugar.push(ev(r.time, 'cube', '#BE185D', '#FCE7F3', 'Rafine şeker (' + m.name + ')')); } });
+  (d.snacks || []).forEach((sn) => { meals.push(ev(sn.t, 'leaf', '#15803D', '#DCFCE7', 'Ara öğün: ' + sn.name)); if (sn.marks && sn.marks.s) sugar.push(ev(sn.t, 'cube', '#BE185D', '#FCE7F3', 'Rafine şeker (' + sn.name + ')')); });
   const lanes = [
     { label: 'Uyku', icon: 'moon', color: '#3730A3', events: [ev(d.sleep.wake, 'sun', '#fff', '#B45309', 'Uyandım'), ev(d.sleep.bed, 'moon', '#fff', '#312E81', 'Yattım')] },
     { label: 'Su', icon: 'drop', color: '#1D4ED8', events: d.water.map((t) => ev(t, 'drop', '#1D4ED8', '#DBEAFE', '1 bardak su')) },
@@ -965,6 +990,9 @@ const ACT = {
   noteDel: (ds) => { if (confirm('Bu not silinsin mi?')) mutDay(T(), (d) => { d.notes = d.notes.filter((n) => n.id !== ds.id); }); },
   // öğün
   mark: (ds) => mutDay(T(), (d) => { const r = d.meals[ds.meal] || (d.meals[ds.meal] = {}); r.marks = r.marks || {}; r.marks[ds.k] = !r.marks[ds.k]; if (!r.time) r.time = nowHM(); }),
+  snackAdd: (ds) => mutDay(T(), (d) => { d.snacks = d.snacks || []; d.snacks.push({ id: uid('sn'), t: nowHM(), name: ds.v || 'Ara öğün', marks: {} }); }),
+  snackDel: (ds) => mutDay(T(), (d) => { d.snacks = (d.snacks || []).filter((x) => x.id !== ds.id); }),
+  snackMark: (ds) => mutDay(T(), (d) => { const sn = (d.snacks || []).find((x) => x.id === ds.id); if (sn) { sn.marks = sn.marks || {}; sn.marks[ds.k] = !sn.marks[ds.k]; } }),
   mealSkip: (ds) => mutDay(T(), (d) => { const r = d.meals[ds.meal] || (d.meals[ds.meal] = {}); r.skip = !r.skip; }),
   // spor
   sportAct: (ds) => saveSport({ act: ds.id }),
@@ -1024,6 +1052,8 @@ const CHG = {
   sportEndT: (v) => saveSport({ end: v }),
   weight: (v) => { const n = parseFloat(String(v).replace(',', '.')); mutDay(T(), (d) => { if (n >= 20 && n <= 400) d.weight = Math.round(n * 10) / 10; else delete d.weight; }); },
   prof: (v, ds) => mutCfg((c) => { c.profile = c.profile || {}; const f = ds.field; c.profile[f] = f === 'height' ? (parseInt(v, 10) || null) : f === 'activity' ? parseFloat(v) : v; }),
+  snackTime: (v, ds) => mutDay(T(), (d) => { const sn = (d.snacks || []).find((x) => x.id === ds.id); if (sn && v) sn.t = v; }),
+  snackName: (v, ds) => mutDay(T(), (d) => { const sn = (d.snacks || []).find((x) => x.id === ds.id); if (sn) sn.name = v; }),
   pilTime: (v) => { if (v) mutCfg((c) => { c.sportGoal.pilTime = v; }); },
   cfgNum: (v, ds) => { const n = parseInt(v, 10); if (isNaN(n)) return; mutCfg((c) => { const parts = ds.path.split('.'); let o = c; for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]]; o[parts[parts.length - 1]] = Math.max(0, n); }); }
 };
@@ -1059,7 +1089,7 @@ function exportCsv() {
     return [k, s.mood != null ? fmt1(s.mood) : '', s.sleepH != null ? fmt1(s.sleepH) : '', getDay(addDays(k, -1)).sleep.bed || '', d.sleep.wake || '', d.water.length, d.water.join(' '),
       d.drinks.map((e) => ((c.drinks.find((x) => x.id === e.id) || {}).name || e.id) + (e.v ? ' ' + e.v : '') + ' ' + e.t).join(' | '), s.coffee ?? '',
       Object.entries(d.supps).map(([id, t]) => ((c.supps.find((x) => x.id === id) || {}).name || id) + ' ' + t).join(' | '),
-      mealStr(d.meals.k), mealStr(d.meals.o), mealStr(d.meals.a), mealStr(d.meals.x),
+      mealStr(d.meals.k), mealStr(d.meals.o), mealStr(d.meals.a), [d.meals.x ? mealStr(d.meals.x) : ''].concat((d.snacks || []).map((sn) => sn.t + ' ' + sn.name + (NUTS.filter((n) => (sn.marks || {})[n.k]).length ? ' ' + NUTS.filter((n) => (sn.marks || {})[n.k]).map((n) => n.short).join('+') : ''))).filter(Boolean).join(' | '),
       s.sportMin || 0, d.sport.map((l) => (l.name || l.act) + ' ' + (l.start || '') + '-' + (l.end || '') + ' ' + l.min + 'dk ' + INTENS[l.intensity ?? 1]).join(' | '),
       d.reps.map((r) => ((c.moves.find((x) => x.id === r.id) || {}).name || r.id) + ' ' + r.n + ' ' + r.t).join(' | '),
       d.notes.map((n) => n.t + ' ' + (n.mood != null ? MOODS[n.mood].label : '') + ' ' + (n.tags || []).join('/') + ' ' + (n.text || '')).join(' | '), d.weight != null ? String(d.weight).replace('.', ',') : ''].map(cell).join(',');
