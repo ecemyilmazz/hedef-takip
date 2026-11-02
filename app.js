@@ -233,7 +233,7 @@ function defaultConfig() {
       { id: 'kisisel', name: 'Kişisel gelişim', sub: 'Öğrenme, okuma, alışkanlıklar', icon: 'star', color: 'purple', examples: 'örn. günde 20 sayfa, dil pratiği', goals: [] },
       { id: 'maddi', name: 'Maddi', sub: 'Birikim, harcama, bütçe', icon: 'coin', color: 'amber', examples: 'örn. aylık birikim, harcama limiti', goals: [] },
       { id: 'bakim', name: 'Bakım', sub: 'Lazer, manikür, kişisel bakım, yapılacaklar', icon: 'sparkle', color: 'pink', examples: 'örn. lazer, manikür, saç kesimi', goals: [] }
-    ], careAreaAdded: true
+    ]
   };
 }
 function upgradeConfig(c) {
@@ -241,7 +241,8 @@ function upgradeConfig(c) {
   const out = Object.assign({}, d, c || {});
   ['nutGoals', 'sportGoal', 'profile', 'money', 'care'].forEach((k) => { out[k] = Object.assign({}, d[k], (c || {})[k] || {}); });
   ['drinks', 'supps', 'acts', 'moves', 'areas'].forEach((k) => { if (!Array.isArray(out[k])) out[k] = d[k]; });
-  if (!out.careAreaAdded) { if (!out.areas.some((a) => a.id === 'bakim')) out.areas = out.areas.concat([d.areas.find((a) => a.id === 'bakim')]); out.careAreaAdded = true; }
+  // Bakım alanı sonradan eklendi: eski kayıtlarda yoksa bir kez ekle (kullanıcı silerse geri gelmez)
+  if (!(c || {}).careArea2) { if (!out.areas.some((a) => a.id === 'bakim')) out.areas = out.areas.concat([d.areas.find((a) => a.id === 'bakim')]); out.careArea2 = true; delete out.careAreaAdded; }
   out.care = Object.assign({ weekly: [], todos: [] }, out.care || {});
   return out;
 }
