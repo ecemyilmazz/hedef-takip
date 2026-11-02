@@ -1,0 +1,11 @@
+# Cloudflare Worker ayarları (Git ile otomatik yayın için).
+# Gizli değerler (GOOGLE_CLIENT_SECRET, SESSION_KEY) burada DEĞİL, Cloudflare panelinde "Secret" olarak durur.
+name = "hedeflerim-auth"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+preview_urls = false
+
+[vars]
+GOOGLE_CLIENT_ID = "967121735414-jnrc0ag77nk7prpobuc82pp4e8e291vn.apps.googleusercontent.com"
+ALLOWED_ORIGINS = "https://ecemyilmazz.github.io"
