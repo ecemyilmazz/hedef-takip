@@ -581,7 +581,7 @@ function weekKeys(key) { const d = dateObj(key); const dow = (d.getDay() + 6) % 
 
 /* ================= görünüm parçaları ================= */
 function navBar() {
-  const items = [['home', 'grid', 'Alanlar'], ['today', 'home', 'Bugün'], ['insights', 'chart', 'İçgörüler'], ['settings', 'sliders', 'Ayarlar']];
+  const items = [['today', 'home', 'Bugün'], ['home', 'grid', 'Alanlar'], ['insights', 'chart', 'İçgörüler'], ['settings', 'sliders', 'Ayarlar']];
   const cur = S.route.startsWith('area:') || S.route === 'sport' ? 'home' : S.route;
   return `<nav class="nav" aria-label="Ana menü"><div class="brand"><span class="logo">${ic('target', 17, 2)}</span>Hedeflerim</div>${items.map(([r, i, l]) =>
     `<a href="#${r}" ${cur === r ? 'aria-current="page"' : ''}>${ic(i, 20, cur === r ? 2 : 1.8)}${l}</a>`).join('')}
