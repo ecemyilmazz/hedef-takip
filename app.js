@@ -102,6 +102,7 @@ const P = {
 };
 function ic(name, size = 22, sw = 1.8, extra = '') {
   const d = P[name] || name;
+  if (/fill="currentColor"/.test(extra)) return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="${d}"/></svg>`;
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}><path d="${d}"/></svg>`;
 }
 const FACE = 'M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18zM9 10h.01M15 10h.01';
@@ -790,21 +791,53 @@ function viewSport() {
     return `<div class="row">${icoBox(a.icon, 'orange')}<div class="col grow"><span class="name">${esc(a.name || l.name)}</span><span class="sub">${l.start && l.end ? esc(l.start) + '–' + esc(l.end) + ' · ' : ''}${durText(l.min || 0)} · ${INTENS[l.intensity ?? 1]}</span></div>${m ? `<span class="chip-ic" style="width:30px;height:30px;background:${m.bg};color:${m.fg}" title="Sonra: ${m.label}">${ic(m.d, 18, 1.7)}</span>` : ''}<button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="sportDel" data-id="${esc(l.id)}" aria-label="Kaydı sil">${ic('x', 16, 2)}</button></div>`;
   }).join('');
   const unit = S.ui.newUnit || 'tekrar';
-  return `${healthTabs('sport')}${topBar('Spor', longDate(k))}${pilatesBanner()}
-  <div class="grid-cards">
-    <section class="card" aria-label="Bu hafta"><div class="card-h"><h2>Bu hafta</h2><span class="hint">Hedef: Pilates ${sg.pilGoal} × ${sg.pilMin} dk</span></div>
+  const secWeek = `    <section class="card" aria-label="Bu hafta"><div class="card-h"><h2>Bu hafta</h2><span class="hint">Hedef: Pilates ${sg.pilGoal} × ${sg.pilMin} dk</span></div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">
         <div class="col" style="gap:6px"><span style="font-size:24px;font-weight:800">${pil}<span style="font-size:15px;color:#4B5563;font-weight:600"> / ${sg.pilGoal} pilates</span></span><div class="bar"><div style="width:${Math.min(100, Math.round(pil / sg.pilGoal * 100))}%;background:#C2410C"></div></div></div>
         <div class="col" style="gap:6px"><span style="font-size:24px;font-weight:800">${wMin}<span style="font-size:15px;color:#4B5563;font-weight:600"> / ${sg.weekMin} dk</span></span><div class="bar"><div style="width:${Math.min(100, Math.round(wMin / sg.weekMin * 100))}%;background:#C2410C"></div></div></div>
-      </div><div class="week7">${week}</div></section>
-    <section class="card" aria-label="Aktivite"><h2 style="font-size:17px;font-weight:700">Ne yapıyorsun?</h2><div class="acts">${acts}<button type="button" class="act" style="border-style:dashed" data-act="toggleOpen" data-v="newAct">${ic('plus', 18, 2.2)}<span>Ekle</span></button></div>
+      </div><div class="week7">${week}</div></section>`;
+  const secAct = `    <section class="card" aria-label="Aktivite"><h2 style="font-size:17px;font-weight:700">Ne yapıyorsun?</h2><div class="acts">${acts}<button type="button" class="act" style="border-style:dashed" data-act="toggleOpen" data-v="newAct">${ic('plus', 18, 2.2)}<span>Ekle</span></button></div>
       ${S.ui.open.newAct ? `<div class="row" style="gap:8px"><input class="field grow" type="text" data-draft="newAct" value="${esc(S.ui.drafts.newAct || '')}" placeholder="örn. Dans, Tenis" aria-label="Yeni aktivite adı"><button type="button" class="btn btn-dark btn-sm" data-act="addAct">Ekle</button></div>` : ''}
-      ${control}</section>
-    <section class="card" aria-label="Tekrarlı hareketler"><div class="card-h"><h2>Tekrarlı hareketler</h2><span class="hint">Her dokunuş bir set, saatiyle</span></div>${moves}
+      ${control}</section>`;
+  const secMoves = `    <section class="card" aria-label="Tekrarlı hareketler"><div class="card-h"><h2>Tekrarlı hareketler</h2><span class="hint">Her dokunuş bir set, saatiyle</span></div>${moves}
       <div class="row" style="gap:8px"><input class="field dashed grow" type="text" data-draft="newMove" value="${esc(S.ui.drafts.newMove || '')}" placeholder="Yeni hareket (örn. Lunge)" aria-label="Yeni hareket adı"><button type="button" class="btn btn-dark btn-sm" data-act="addMove">Ekle</button></div>
-      <div class="row sub" style="gap:8px">Birim:${[['tekrar', 'Tekrar'], ['sn', 'Saniye']].map(([v, l]) => `<button type="button" class="pill" style="height:36px" data-act="newUnit" data-v="${v}" aria-pressed="${unit === v}">${l}</button>`).join('')}</div></section>
-    <section class="card" aria-label="Bugünkü aktiviteler"><div class="card-h"><h2>Bugün</h2><span class="hint">${d.sport.length ? d.sport.length + ' aktivite · ' + durText(d.sport.reduce((s, x) => s + (x.min || 0), 0)) : 'Kayıt yok'}</span></div>${log || '<p class="empty">Bugün henüz aktivite yok. Başladığında tek dokunuş yeter.</p>'}</section>
-  </div>`;
+      <div class="row sub" style="gap:8px">Birim:${[['tekrar', 'Tekrar'], ['sn', 'Saniye']].map(([v, l]) => `<button type="button" class="pill" style="height:36px" data-act="newUnit" data-v="${v}" aria-pressed="${unit === v}">${l}</button>`).join('')}</div></section>`;
+  const secLog = `    <section class="card" aria-label="Bugünkü aktiviteler"><div class="card-h"><h2>Bugün</h2><span class="hint">${d.sport.length ? d.sport.length + ' aktivite · ' + durText(d.sport.reduce((s, x) => s + (x.min || 0), 0)) : 'Kayıt yok'}</span></div>${log || '<p class="empty">Bugün henüz aktivite yok. Başladığında tek dokunuş yeter.</p>'}</section>`;
+  if (!isDesktop()) return `${healthTabs('sport')}${topBar('Spor', longDate(k))}${pilatesBanner()}<div class="grid-cards">${secWeek}${secAct}${secMoves}${secLog}</div>`;
+  // ---------- masaüstü ----------
+  const activeDays = wk.filter((x) => (getDay(x).sport || []).length).length;
+  const todayMin = d.sport.reduce((s2, x) => s2 + (x.min || 0), 0);
+  const repTotal = d.reps.reduce((s2, r) => s2 + (r.n || 0), 0);
+  const kpi = (icon, color, label, value, sub, bar) => { const [fg, bg] = col(color); return `<div class="kpi"><div class="row" style="gap:8px"><span class="chip-ic" style="width:28px;height:28px;border-radius:8px;background:${bg};color:${fg}">${ic(icon, 15, 2)}</span><span class="kpi-l">${label}</span></div><div class="kpi-v">${value}</div>${bar != null ? `<div class="bar" style="height:5px"><div style="height:5px;width:${clamp(bar, 0, 100)}%;background:${fg}"></div></div>` : ''}<div class="kpi-s">${sub}</div></div>`; };
+  const kpis = [
+    kpi('pilates', 'orange', 'Bu hafta pilates', `${pil}<small> / ${sg.pilGoal} seans</small>`, (sg.pilDays || []).map((x) => TR_D3[x]).join(' · ') + ' ' + esc(sg.pilTime || ''), pil / Math.max(1, sg.pilGoal) * 100),
+    kpi('clock', 'orange', 'Haftalık süre', `${wMin}<small> / ${sg.weekMin} dk</small>`, wMin >= sg.weekMin ? 'Hedef tamam' : (sg.weekMin - wMin) + ' dk kaldı', wMin / Math.max(1, sg.weekMin) * 100),
+    kpi('check', 'green', 'Aktif gün', `${activeDays}<small> / 7 gün</small>`, 'Bu hafta', activeDays / 7 * 100),
+    kpi('run', 'orange', 'Bugün', todayMin ? durText(todayMin) : '—', d.sport.length ? d.sport.length + ' aktivite' : 'Henüz yok', null),
+    kpi('mekik', 'orange', 'Bugün tekrar', repTotal ? String(repTotal) : '—', d.reps.length ? d.reps.length + ' set' : 'Henüz yok', null)
+  ].join('');
+  // haftalık takvim: her gün yapılanlar + planlanan pilates
+  const nowM = new Date().getHours() * 60 + new Date().getMinutes();
+  const cal = wk.map((x, i) => {
+    const dd = getDay(x); const dow = (i + 1) % 7; const isT = x === k; const past = x < k;
+    const items = (dd.sport || []).map((l) => { const a = c.acts.find((y) => y.id === l.act) || { name: l.name, icon: 'dot' }; return `<div class="wk-item done">${ic(a.icon, 14, 1.9)}<span>${esc(a.name)}</span><b>${l.min || 0} dk</b></div>`; });
+    const repsN = (dd.reps || []).reduce((s2, r) => s2 + (r.n || 0), 0);
+    if (repsN) items.push(`<div class="wk-item done">${ic('mekik', 14, 1.9)}<span>Tekrar</span><b>${repsN}</b></div>`);
+    const planned = (sg.pilDays || []).includes(dow) && !(dd.sport || []).some((e) => e.act === 'pilates');
+    if (planned) items.push(`<div class="wk-item ${past || (isT && nowM > (toMin(sg.pilTime || '20:00') || 0) + (sg.pilMin || 40)) || dd.pilSkip ? 'missed' : 'plan'}">${ic('pilates', 14, 1.9)}<span>Pilates</span><b>${dd.pilSkip ? 'gitmedim' : esc(sg.pilTime || '')}</b></div>`);
+    const dt = dateObj(x);
+    return `<div class="wk-day ${isT ? 'today' : ''}"><div class="wk-h"><span>${TR_D3[dow]}</span><b>${dt.getDate()}</b></div>${items.join('') || '<span class="wk-empty">—</span>'}</div>`;
+  }).join('');
+  // son 6 hafta toplam dakika
+  const weeks = Array.from({ length: 6 }, (_, j) => { const ks = weekKeys(addDays(k, -7 * (5 - j))); const m = ks.reduce((s2, x) => s2 + (getDay(x).sport || []).reduce((a, e) => a + (e.min || 0), 0), 0); return { m, label: dateObj(ks[0]).getDate() + ' ' + TR_M3[dateObj(ks[0]).getMonth()], cur: j === 5 }; });
+  const maxW = Math.max(sg.weekMin, ...weeks.map((w) => w.m), 1) * 1.15;
+  const trend = `<section class="card" aria-label="Son 6 hafta"><div class="card-h"><h2>Son 6 hafta</h2><span class="hint">haftalık dakika · çizgi = hedef</span></div>
+    <div class="wbars" role="img" aria-label="Son 6 haftanın spor dakikaları: ${weeks.map((w) => w.label + ' ' + w.m + ' dk').join(', ')}"><span class="wplot"><span class="wgoal" style="bottom:${Math.round(sg.weekMin / maxW * 100)}%"></span></span>${weeks.map((w) => `<div class="wbar" title="${w.label} haftası: ${w.m} dk"><b>${w.m || ''}</b><span style="height:${Math.max(2, Math.round(w.m / maxW * 100))}%;background:${w.cur ? '#C2410C' : '#FDBA74'}"></span><em>${w.label}</em></div>`).join('')}</div></section>`;
+  const quickBar = `<div class="quick" role="toolbar" aria-label="Hızlı kayıt"><button type="button" class="qbtn" data-act="sportQuick">${ic('pilates', 16, 1.9)}<span>Pilates yaptım · ${sg.pilMin} dk</span></button>${sp.mode === 'idle' ? `<button type="button" class="qbtn" data-act="sportStart">${ic('play', 14, 0, 'fill="currentColor"')}<span>${esc(act.name)} başladım</span></button>` : ''}</div>`;
+  return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>Spor</h1></div>${quickBar}</header>
+    ${pilatesBanner()}<div class="kpis">${kpis}</div>
+    <section class="card" aria-label="Bu hafta"><div class="card-h"><h2>Bu hafta</h2><span class="hint">Turuncu kesik çerçeve = planlanan pilates · gri = kaçırılan</span></div><div class="wk">${cal}</div></section>
+    <div class="dash"><div class="dash-col">${secAct}${secMoves}</div><div class="dash-col">${secLog}${trend}</div></div>`;
 }
 
 /* ---------- içgörüler ---------- */
