@@ -102,7 +102,11 @@ const P = {
   car: 'M5 16h14M6 16l1.5-5h9L18 16M6 16v3h2v-3M16 16v3h2v-3M8.5 13.5h.01M15.5 13.5h.01',
   shirt: 'M8 4l-4 3 2 3 2-1v11h8V9l2 1 2-3-4-3c-.5 1.5-2 2.5-4 2.5S8.5 5.5 8 4z',
   wallet: 'M4 7h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a1 1 0 0 1-1-1zM4 7l11-3v3M16 13.5h.01',
-  repeat: 'M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4'
+  repeat: 'M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4',
+  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z',
+  zap: 'M13 2L4 14h7l-1 8 9-12h-7z',
+  scissors: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.1 7.9L20 20M8.1 16.1L20 4',
+  hand: 'M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5v-7a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.6-2.2L3 15.5a1.6 1.6 0 0 1 2.4-2.1L8 16'
 };
 function ic(name, size = 22, sw = 1.8, extra = '') {
   const d = P[name] || name;
@@ -180,6 +184,7 @@ function defaultConfig() {
       ],
       recurring: [], savings: [], savingsLog: []
     },
+    care: { weekly: [], todos: [] },
     nutGoals: { p: 3, y: 2, c: 3, s: 0, u: 1 },
     sportGoal: { pilGoal: 2, pilMin: 40, weekMin: 150, pilDays: [1, 4], pilTime: '20:00' },
     drinks: [
@@ -206,19 +211,22 @@ function defaultConfig() {
     areas: [
       { id: 'meslek', name: 'Meslek', sub: 'Kariyer ve iş hedeflerin', icon: 'brief', color: 'blue', examples: 'örn. haftalık proje adımı, yeni beceri', goals: [] },
       { id: 'kisisel', name: 'Kişisel gelişim', sub: 'Öğrenme, okuma, alışkanlıklar', icon: 'star', color: 'purple', examples: 'örn. günde 20 sayfa, dil pratiği', goals: [] },
-      { id: 'maddi', name: 'Maddi', sub: 'Birikim, harcama, bütçe', icon: 'coin', color: 'amber', examples: 'örn. aylık birikim, harcama limiti', goals: [] }
-    ]
+      { id: 'maddi', name: 'Maddi', sub: 'Birikim, harcama, bütçe', icon: 'coin', color: 'amber', examples: 'örn. aylık birikim, harcama limiti', goals: [] },
+      { id: 'bakim', name: 'Bakım', sub: 'Lazer, manikür, kişisel bakım, yapılacaklar', icon: 'sparkle', color: 'pink', examples: 'örn. lazer, manikür, saç kesimi', goals: [] }
+    ], careAreaAdded: true
   };
 }
 function upgradeConfig(c) {
   const d = defaultConfig();
   const out = Object.assign({}, d, c || {});
-  ['nutGoals', 'sportGoal', 'profile', 'money'].forEach((k) => { out[k] = Object.assign({}, d[k], (c || {})[k] || {}); });
+  ['nutGoals', 'sportGoal', 'profile', 'money', 'care'].forEach((k) => { out[k] = Object.assign({}, d[k], (c || {})[k] || {}); });
   ['drinks', 'supps', 'acts', 'moves', 'areas'].forEach((k) => { if (!Array.isArray(out[k])) out[k] = d[k]; });
+  if (!out.careAreaAdded) { if (!out.areas.some((a) => a.id === 'bakim')) out.areas = out.areas.concat([d.areas.find((a) => a.id === 'bakim')]); out.careAreaAdded = true; }
+  out.care = Object.assign({ weekly: [], todos: [] }, out.care || {});
   return out;
 }
 function blankDay(key) {
-  return { date: key, updatedAt: 0, mood: null, sleep: {}, water: [], drinks: [], supps: {}, meals: {}, snacks: [], notes: [], sport: [], reps: [], goals: {}, expenses: [] };
+  return { date: key, updatedAt: 0, mood: null, sleep: {}, water: [], drinks: [], supps: {}, meals: {}, snacks: [], notes: [], sport: [], reps: [], goals: {}, expenses: [], care: [] };
 }
 
 /* ================= durum ================= */
@@ -344,7 +352,7 @@ function uniq(arr) { const seen = new Set(); return arr.filter((x) => { const k 
 function mergeDay(local, remote) {
   // iki cihazda aynı gün değiştiyse: listeleri birleştir, tekil alanlarda yerel olanı tut
   const out = Object.assign({}, remote, local);
-  ['water', 'drinks', 'notes', 'sport', 'reps', 'snacks', 'expenses'].forEach((k) => { out[k] = uniq([...(remote[k] || []), ...(local[k] || [])]); });
+  ['water', 'drinks', 'notes', 'sport', 'reps', 'snacks', 'expenses', 'care'].forEach((k) => { out[k] = uniq([...(remote[k] || []), ...(local[k] || [])]); });
   out.water.sort(); ['drinks', 'reps'].forEach((k) => out[k].sort((a, b) => String(a.t).localeCompare(String(b.t))));
   out.supps = Object.assign({}, remote.supps || {}, local.supps || {});
   out.meals = Object.assign({}, remote.meals || {}, local.meals || {});
@@ -536,6 +544,7 @@ function viewHomeDesktop() {
       mini('flame', 'orange', 'Bazal', bi.ready ? fmtK(bi.bmr) + ' kcal' : '—', bi.ready ? '~' + fmtK(bi.tdee) + ' toplam' : '')
     ].join('')}</div></a>`;
   const areas = c.areas.map((a) => {
+    if (a.id === 'bakim') { const cw = S.config.care.weekly || []; const cdone = cw.filter((it) => careWeek(it, k).done >= (it.perWeek || 1)).length; const copen = (S.config.care.todos || []).filter((t) => !t.done).length; const list = cw.slice(0, 6).map((it) => { const w = careWeek(it, k); const ok = w.done >= (it.perWeek || 1); return `<div class="row" style="gap:8px;min-height:28px"><span class="chip-ic" style="width:24px;height:24px;border-radius:7px;background:#FCE7F3;color:#BE185D">${ic(it.icon || 'sparkle', 13, 2)}</span><span class="grow" style="font-size:13px;font-weight:600">${esc(it.name)}</span><span style="font-size:12px;font-weight:700;color:${ok ? '#15803D' : '#B45309'}">${ok ? '✓ ' : ''}${w.done}/${it.perWeek || 1}</span></div>`; }).join(''); return `<a class="area" href="#area:bakim"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Bu hafta ${cdone}/${cw.length} tamam · ${copen} yapılacak</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>${list ? `<div class="col" style="gap:2px">${list}</div>` : `<div class="area-empty"><span>${esc(a.examples || '')}</span><b style="color:#BE185D">+ Ekle</b></div>`}</a>`; }
     if (a.id === 'maddi') { const ms = moneySummary(k); return `<a class="area" href="#area:maddi"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Harcama · Bütçe · Birikim</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div><div class="minis" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="mini"><div class="col"><span class="mini-l">Bugün</span><span class="mini-v">${fmtTL(daySpend(d))}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Bu ay</span><span class="mini-v">${fmtTL(ms.spent)}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Kalan</span><span class="mini-v" style="color:${ms.left < 0 ? '#B91C1C' : '#111827'}">${ms.income ? fmtTL(ms.left) : '—'}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Birikim (bu ay)</span><span class="mini-v">${fmtTL(ms.savedMonth)}</span></div></div></div></a>`; }
     const gs = a.goals || []; const [fg] = col(a.color); const done = gs.filter((g) => goalDone(g, d)).length;
     const list = gs.slice(0, 5).map((g) => { const v = goalVal(g, d); const ok = goalDone(g, d); const [gf, gb] = col(g.color || a.color);
@@ -553,13 +562,14 @@ function viewHomeDesktop() {
     { label: 'Uyku 7 sa+', icon: 'moon', color: 'indigo', f: (x) => { const m = sleepMinutes(x); return m == null ? null : m >= 420; } },
     { label: 'Pilates', icon: 'pilates', color: 'orange', f: (x) => { const dd = getDay(x); const did = (dd.sport || []).some((e) => e.act === 'pilates'); if (did) return true; return (sg.pilDays || []).includes(dateObj(x).getDay()) && x < k ? false : null; } },
     { label: 'Rafine şeker yok', icon: 'cube', color: 'pink', f: (x) => { const dd = S.days[x]; if (!dd) return null; const ev = eats(dd); if (!ev.some((e) => e.time || Object.values(e.marks).some(Boolean))) return null; return !ev.some((e) => !e.skip && e.marks.s); } }
-  ].concat(c.areas.flatMap((a) => (a.goals || []).map((g) => ({ label: g.name, icon: g.icon, color: g.color || a.color, f: (x) => (S.days[x] ? goalDone(g, getDay(x)) : null) }))));
+  ].concat(c.areas.flatMap((a) => (a.goals || []).map((g) => ({ label: g.name, icon: g.icon, color: g.color || a.color, f: (x) => (S.days[x] ? goalDone(g, getDay(x)) : null) }))))
+   .concat((c.care.weekly || []).map((it) => ({ label: it.name, icon: it.icon || 'sparkle', color: 'pink', f: (x) => ((getDay(x).care || []).some((l) => l.item === it.id) ? true : null) })));
   const streak = `<section class="card" aria-label="Son 7 gün"><div class="card-h"><h2>Son 7 gün</h2><span class="hint">dolu = tuttu · boş = tutmadı · nokta = kayıt yok</span></div>
     <div class="streak"><span></span>${days7.map((x) => { const dt = dateObj(x); return `<span class="st-h ${x === k ? 'today' : ''}">${TR_D3[dt.getDay()]}<b>${dt.getDate()}</b></span>`; }).join('')}
     ${rows.map((r) => { const [fg, bg] = col(r.color); return `<span class="st-l"><span style="color:${fg};display:flex">${ic(r.icon, 15, 2)}</span><span>${esc(r.label)}</span></span>${days7.map((x) => { const v = r.f(x); return `<span class="st-c" title="${esc(r.label)} · ${esc(longDate(x))}: ${v == null ? 'kayıt yok' : v ? 'tuttu' : 'tutmadı'}">${v == null ? '<i></i>' : `<em style="${v ? `background:${fg};border-color:${fg}` : `border-color:${bg === '#F3F4F6' ? '#D1D5DB' : fg};opacity:.45`}"></em>`}</span>`; }).join('')}`; }).join('')}</div></section>`;
   const hour = new Date().getHours(); const greet = hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar';
   return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>${greet}${S.user.name ? ', ' + esc(S.user.name) : ''}</h1></div></header>
-    ${pilatesBanner()}
+    ${pilatesBanner()}${careBanner()}
     <div class="dash"><div class="dash-col">${health}<div class="dash-2">${areas}</div></div>
     <div class="dash-col">${streak}<section class="card" aria-label="Yeni alan"><div class="card-h"><h2>Yeni alan</h2><span class="hint">örn. İlişkiler, Ev, Hobi</span></div><div class="row" style="gap:8px">${addAreaForm()}</div></section></div></div>`;
 }
@@ -579,6 +589,7 @@ function viewHome() {
   const health = `<a class="area" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>
     <div class="row" style="flex-wrap:wrap;gap:6px">${chips.map(([i, f, t]) => `<span class="tag"><span style="color:${f};display:flex">${ic(i, 16, 2)}</span>${esc(t)}</span>`).join('')}</div></a>`;
   const others = c.areas.map((a) => {
+    if (a.id === 'bakim') { const cw = S.config.care.weekly || []; const cdone = cw.filter((it) => careWeek(it, k).done >= (it.perWeek || 1)).length; const copen = (S.config.care.todos || []).filter((t) => !t.done).length; return `<a class="area" href="#area:bakim"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">${esc(a.sub || '')}</span></div>${ic('chevR', 18, 2, 'style="color:#6B7280"')}</div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag">Bu hafta ${cdone}/${cw.length} bakım</span><span class="tag">${copen} yapılacak</span></div></a>`; }
     if (a.id === 'maddi') { const ms = moneySummary(k); return `<a class="area" href="#area:maddi"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">Harcama · Bütçe · Birikim</span></div>${ic('chevR', 18, 2, 'style="color:#6B7280"')}</div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag">Bugün ${fmtTL(daySpend(d))}</span><span class="tag">Bu ay ${fmtTL(ms.spent)}</span>${ms.income ? `<span class="tag">Kalan ${fmtTL(ms.left)}</span>` : ''}</div></a>`; }
     const gs = a.goals || [];
     const done = gs.filter((g) => goalDone(g, d)).length;
@@ -588,7 +599,7 @@ function viewHome() {
     return `<a class="area" href="#area:${esc(a.id)}"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">${esc(a.sub || '')}</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>${body}</a>`;
   }).join('');
   return `${topBar('Alanlarım', longDate(k))}
-    ${pilatesBanner()}<p style="color:#4B5563;font-size:14px;margin-top:-8px">Merhaba${S.user.name ? ' ' + esc(S.user.name) : ''}. Hayatının her alanı için ayrı hedefler.</p>
+    ${pilatesBanner()}${careBanner()}<p style="color:#4B5563;font-size:14px;margin-top:-8px">Merhaba${S.user.name ? ' ' + esc(S.user.name) : ''}. Hayatının her alanı için ayrı hedefler.</p>
     <div class="grid-cards grid-areas">${health}${others}</div>
     <div class="row" style="gap:8px">${addAreaForm()}</div>`;
 }
@@ -678,8 +689,60 @@ function viewMoney() {
   return `${tabs}<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(monthLabel(k))} · ${ms.daysLeft} gün kaldı</span><h1>Maddi</h1></div></header>
     <div class="kpis">${kpis}</div><div class="dash"><div class="dash-col">${secAdd}${secCats}</div><div class="dash-col">${secMonth}${secWhy}${secSave}${secRec}</div></div>`;
 }
+/* ---------- bakım ---------- */
+function careWeek(item, k) {
+  const wk = weekKeys(k); const logs = [];
+  wk.forEach((x) => (getDay(x).care || []).forEach((l) => { if (l.item === item.id) logs.push(Object.assign({ day: x }, l)); }));
+  return { wk, logs, done: logs.length };
+}
+function careLast(item, k) {
+  const keys = Object.keys(S.days).filter((x) => x <= k).sort().reverse();
+  for (const x of keys) { const l = (S.days[x].care || []).filter((y) => y.item === item.id); if (l.length) return x; }
+  return null;
+}
+function careBanner() {
+  const k = todayKey(); const dow = dateObj(k).getDay(); if (![5, 6, 0].includes(dow)) return '';
+  const miss = (S.config.care.weekly || []).filter((it) => careWeek(it, k).done < (it.perWeek || 1));
+  if (!miss.length) return '';
+  return `<div class="banner" role="status" style="background:#FDF2F8;border-color:#F9A8D4;color:#9D174D">${ic('sparkle', 18, 1.9)}<span class="grow">Bu hafta henüz yapılmadı: <b>${miss.map((x) => esc(x.name)).join(', ')}</b></span>${S.route === 'area:bakim' ? '' : `<a class="btn btn-sm" style="background:#BE185D;color:#fff;text-decoration:none" href="#area:bakim">Bakım’a git</a>`}</div>`;
+}
+function viewCare() {
+  const k = todayKey(); const c = S.config.care; const groups = {};
+  (c.weekly || []).forEach((it) => { (groups[it.group || 'Düzenli bakım'] = groups[it.group || 'Düzenli bakım'] || []).push(it); });
+  const ago = (x) => { if (!x) return 'Henüz yapılmadı'; const n = Math.round((dateObj(k) - dateObj(x)) / 86400000); return n === 0 ? 'Son: bugün' : n === 1 ? 'Son: dün' : 'Son: ' + n + ' gün önce'; };
+  const item = (it) => {
+    const w = careWeek(it, k); const per = it.perWeek || 1; const ok = w.done >= per; const doneToday = (getDay(k).care || []).some((l) => l.item === it.id);
+    const dots = w.wk.map((x, i) => { const n = w.logs.filter((l) => l.day === x).length; return `<span class="cdot ${n ? 'on' : ''} ${x === k ? 'today' : ''}" title="${TR_D3[(i + 1) % 7]}${n ? ': yapıldı' : ''}">${TR_D3[(i + 1) % 7].slice(0, 2)}</span>`; }).join('');
+    return `<div class="care-row"><div class="row" style="gap:10px">${icoBox(it.icon || 'sparkle', it.color || 'pink', 34, 18)}<div class="col grow"><span class="name">${esc(it.name)}</span><span class="sub">${ago(careLast(it, k))} · hedef haftada ${per}</span></div>
+      <span class="care-st" style="color:${ok ? '#15803D' : '#B45309'}">${ok ? ic('check', 14, 2.6) : ''}${w.done}/${per}</span></div>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><div class="cdots">${dots}</div><span class="grow"></span>
+      ${doneToday ? `<button type="button" class="btn btn-ghost btn-sm" data-act="careUndo" data-id="${esc(it.id)}">Geri al</button>` : ''}
+      <button type="button" class="btn btn-sm" style="background:#BE185D;color:#fff" data-act="careDo" data-id="${esc(it.id)}">${ic('check', 14, 2.6)}Yaptım</button>
+      <button type="button" class="btn-icon" style="border:0;color:#9CA3AF;width:32px;height:32px" data-act="careItemDel" data-id="${esc(it.id)}" aria-label="${esc(it.name)} sil">${ic('x', 14, 2)}</button></div></div>`;
+  };
+  const weeklySecs = Object.keys(groups).map((g) => { const its = groups[g]; const done = its.filter((it) => careWeek(it, k).done >= (it.perWeek || 1)).length;
+    return `<section class="card" aria-label="${esc(g)}"><div class="card-h"><h2>${esc(g)}</h2><span class="hint">bu hafta ${done}/${its.length} tamam</span></div>${its.map(item).join('')}</section>`; }).join('');
+  const groupOpts = Array.from(new Set(['Lazer', 'Kişisel bakım', 'Maskeler', 'Vücut'].concat(Object.keys(groups))));
+  const addWeekly = `<section class="card" aria-label="Yeni düzenli bakım"><div class="card-h"><h2>Yeni düzenli bakım</h2><span class="hint">örn. lazer bölgesi, maske, manikür</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 92px;gap:6px"><input class="field" type="text" data-draft="careName" value="${esc(S.ui.drafts.careName || '')}" placeholder="Ad (örn. Bacak)" aria-label="Bakım adı">
+    <select class="field" data-draft="careGroup" aria-label="Grup">${groupOpts.map((g) => `<option ${(S.ui.drafts.careGroup || 'Lazer') === g ? 'selected' : ''}>${esc(g)}</option>`).join('')}</select>
+    <label class="row sub" style="gap:4px"><input class="field" style="width:48px;padding:0 6px" type="number" min="1" max="14" data-draft="carePer" value="${esc(S.ui.drafts.carePer || '1')}" aria-label="Haftada kaç kez">/hf</label></div>
+    <button type="button" class="btn btn-ghost btn-sm" data-act="careAdd">${ic('plus', 14, 2.4)}Ekle</button></section>`;
+  const open = (c.todos || []).filter((t) => !t.done); const done = (c.todos || []).filter((t) => t.done).sort((a, b) => String(b.doneDate).localeCompare(String(a.doneDate))).slice(0, 8);
+  const todo = (t) => `<div class="row todo ${t.done ? 'done' : ''}"><button type="button" class="tcheck" data-act="todoToggle" data-id="${esc(t.id)}" aria-pressed="${!!t.done}" aria-label="${esc(t.text)} ${t.done ? 'yapılmadı olarak işaretle' : 'yapıldı olarak işaretle'}">${t.done ? ic('check', 14, 2.8) : ''}</button><div class="col grow"><span style="font-size:14px;font-weight:600">${esc(t.text)}</span>${t.done ? `<span class="sub">${esc(longDate(t.doneDate))}</span>` : ''}</div><button type="button" class="btn-icon" style="border:0;color:#9CA3AF;width:32px;height:32px" data-act="todoDel" data-id="${esc(t.id)}" aria-label="Sil">${ic('x', 14, 2)}</button></div>`;
+  const secTodo = `<section class="card" aria-label="Yapılacaklar"><div class="card-h"><h2>Yapılacaklar</h2><span class="hint">${open.length} bekliyor</span></div>
+    <div class="row" style="gap:8px"><input class="field grow" type="text" data-draft="todoText" value="${esc(S.ui.drafts.todoText || '')}" placeholder="örn. Saçımı kestirmek" aria-label="Yeni yapılacak"><button type="button" class="btn btn-dark btn-sm" data-act="todoAdd">Ekle</button></div>
+    ${open.map(todo).join('') || '<p class="empty">Yapmak istediğin bakımları buraya not al.</p>'}
+    ${done.length ? `<div class="col divider" style="gap:6px"><span class="label">Yapıldı</span>${done.map(todo).join('')}</div>` : ''}</section>`;
+  const tabs = `<nav class="subnav"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a></nav>`;
+  const empty = (c.weekly || []).length ? '' : `<section class="card"><p class="empty">Henüz düzenli bakım yok. Aşağıdan ekleyebilirsin.</p></section>`;
+  if (!isDesktop()) return `${tabs}${topBar('Bakım', longDate(k))}${careBanner()}<div class="grid-cards">${empty}${weeklySecs}${secTodo}${addWeekly}</div>`;
+  return `${tabs}<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>Bakım</h1></div></header>${careBanner()}
+    <div class="dash"><div class="dash-col">${empty}${weeklySecs}${addWeekly}</div><div class="dash-col">${secTodo}</div></div>`;
+}
 function viewArea(id) {
   if (id === 'maddi') return viewMoney();
+  if (id === 'bakim') return viewCare();
   const a = S.config.areas.find((x) => x.id === id);
   if (!a) return `${topBar('Bulunamadı', '')}<a href="#home">Alanlara dön</a>`;
   const k = todayKey(); const d = getDay(k); const [fg, bg] = col(a.color);
@@ -1243,6 +1306,14 @@ const ACT = {
   goalInc: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal] || (d.goals[ds.goal] = { n: 0, times: [] }); v.n += 1; v.times.push(nowHM()); }),
   goalDec: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal]; if (v && v.n > 0) { v.n -= 1; v.times.pop(); } }),
   goalCheck: (ds) => mutDay(T(), (d) => { const v = d.goals[ds.goal]; if (v && v.n) delete d.goals[ds.goal]; else d.goals[ds.goal] = { n: 1, times: [nowHM()] }; }),
+  // bakım
+  careDo: (ds) => { mutDay(T(), (d) => { d.care = d.care || []; d.care.push({ id: uid('ca'), item: ds.id, t: nowHM() }); }); toast('Kaydedildi.'); },
+  careUndo: (ds) => mutDay(T(), (d) => { const i = (d.care || []).map((l) => l.item).lastIndexOf(ds.id); if (i >= 0) d.care.splice(i, 1); }),
+  careAdd: () => { const nm = draft('careName'); if (!nm) { toast('Bakımın adını yaz.'); return; } const per = Math.max(1, parseInt(S.ui.drafts.carePer || '1', 10) || 1); const g = S.ui.drafts.careGroup || 'Lazer'; clearDraft('careName'); S.ui.drafts.carePer = '1'; mutCfg((c) => { c.care.weekly.push({ id: uid('cw'), name: nm, group: g, perWeek: per, icon: g === 'Lazer' ? 'zap' : g === 'Kişisel bakım' ? 'hand' : g === 'Vücut' ? 'repeat' : 'sparkle', color: 'pink' }); }); },
+  careItemDel: (ds) => { if (confirm('Bu bakım listeden kaldırılsın mı? Geçmiş kayıtlar silinmez.')) mutCfg((c) => { c.care.weekly = c.care.weekly.filter((x) => x.id !== ds.id); }); },
+  todoAdd: () => { const t = draft('todoText'); if (!t) return; clearDraft('todoText'); mutCfg((c) => { c.care.todos.push({ id: uid('td'), text: t, done: false, created: T() }); }); },
+  todoToggle: (ds) => mutCfg((c) => { const t = c.care.todos.find((x) => x.id === ds.id); if (t) { t.done = !t.done; t.doneDate = t.done ? T() : null; } }),
+  todoDel: (ds) => { if (confirm('Silinsin mi?')) mutCfg((c) => { c.care.todos = c.care.todos.filter((x) => x.id !== ds.id); }); },
   // maddi
   mxCat: (ds) => { S.ui.mx.cat = ds.v; render(); },
   mxWhy: (ds) => { S.ui.mx.why = S.ui.mx.why === ds.v ? null : ds.v; render(); },
@@ -1296,7 +1367,7 @@ document.addEventListener('input', (e) => { const el = e.target; if (el.dataset 
 document.addEventListener('change', (e) => { const el = e.target; if (el.dataset && el.dataset.change && CHG[el.dataset.change]) CHG[el.dataset.change](el.value, el.dataset, el); });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' || !e.target.dataset || !e.target.dataset.draft || e.target.tagName === 'TEXTAREA') return;
-  const map = { newDrink: 'addDrink', newSupp: 'addSupp', newAct: 'addAct', newMove: 'addMove', newArea: 'addArea', mxAmount: 'mxAdd', mxNote: 'mxAdd', mxNewCat: 'mxAddCat' };
+  const map = { newDrink: 'addDrink', newSupp: 'addSupp', newAct: 'addAct', newMove: 'addMove', newArea: 'addArea', mxAmount: 'mxAdd', mxNote: 'mxAdd', mxNewCat: 'mxAddCat', todoText: 'todoAdd', careName: 'careAdd' };
   const a = map[e.target.dataset.draft]; if (a) { e.preventDefault(); ACT[a]({}); }
 });
 document.addEventListener('toggle', (e) => { const el = e.target; if (el.dataset && el.dataset.keep) S.ui.open[el.dataset.keep] = el.open; }, true);
@@ -1309,6 +1380,12 @@ function applySetupLink() {
   const boy = parseInt(q.get('boy'), 10); const kilo = parseFloat(String(q.get('kilo') || '').replace(',', '.')); const dogum = q.get('dogum'); const cins = q.get('cinsiyet');
   mutCfg((c) => { c.profile = c.profile || {}; if (boy >= 100 && boy <= 250) c.profile.height = boy; if (/^\d{4}-\d{2}-\d{2}$/.test(dogum || '')) c.profile.birth = dogum; if (cins === 'k' || cins === 'f') c.profile.sex = 'f'; if (cins === 'e' || cins === 'm') c.profile.sex = 'm'; });
   if (kilo >= 20 && kilo <= 400) mutDay(todayKey(), (d) => { d.weight = Math.round(kilo * 10) / 10; });
+  // &lazer=Kol,Koltuk altı,Yüz &bakim=Manikür,Pedikür &yapilacak=Saçımı kestirmek;Saçımı boyatmak
+  // "Ad:2" → haftada 2
+  const addW = (list, group, icon) => (list || '').split(',').map((x) => x.trim()).filter(Boolean).forEach((raw) => { const [nm0, n0] = raw.split(':'); const nm = nm0.trim(); const per = Math.max(1, parseInt(n0, 10) || 1); mutCfg((c) => { const ex = c.care.weekly.find((w) => w.name.toLowerCase() === nm.toLowerCase() && w.group === group); if (ex) ex.perWeek = per; else c.care.weekly.push({ id: uid('cw'), name: nm, group, perWeek: per, icon, color: 'pink' }); }); });
+  addW(q.get('lazer'), 'Lazer', 'zap'); addW(q.get('bakim'), 'Kişisel bakım', 'hand'); addW(q.get('maske'), 'Maskeler', 'sparkle'); addW(q.get('vucut'), 'Vücut', 'repeat');
+  (q.get('yapilacak') || '').split(';').map((x) => x.trim()).filter(Boolean).forEach((t) => mutCfg((c) => { if (!c.care.todos.some((x) => x.text.toLowerCase() === t.toLowerCase())) c.care.todos.push({ id: uid('td'), text: t, done: false, created: todayKey() }); }));
+  if (q.get('lazer') || q.get('bakim') || q.get('maske') || q.get('vucut') || q.get('yapilacak')) { history.replaceState(null, '', location.pathname + '#area:bakim'); S.route = 'area:bakim'; render(); toast('Bakım listen hazır.'); return true; }
   history.replaceState(null, '', location.pathname + '#today'); S.route = 'today'; render();
   const b = bmrInfo(); toast(b.ready ? 'Bilgilerin kaydedildi. Bazal metabolizman: ' + fmtK(b.bmr) + ' kcal/gün' : 'Bilgilerin kaydedildi.');
   return true;

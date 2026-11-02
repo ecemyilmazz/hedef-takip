@@ -344,3 +344,16 @@ body { font-size: 14px; }
 .stack { display: flex; height: 14px; border-radius: 99px; overflow: hidden; gap: 2px; background: #F0F1F3; }
 .stack span { height: 14px; }
 @media (max-width: 420px) { .mcats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* bakım */
+.care-row { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line2); }
+.care-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.care-st { display: inline-flex; align-items: center; gap: 3px; font-size: 14px; font-weight: 800; }
+.cdots { display: flex; gap: 4px; }
+.cdot { width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--line); font-size: 10px; font-weight: 700; color: #9CA3AF; display: flex; align-items: center; justify-content: center; }
+.cdot.on { background: #BE185D; border-color: #BE185D; color: #fff; }
+.cdot.today { box-shadow: 0 0 0 2px #F9A8D4; }
+.todo { min-height: 40px; }
+.todo.done span { color: #6B7280; }
+.todo.done .col > span:first-child { text-decoration: line-through; }
+.tcheck { width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid #D1D5DB; background: #fff; display: flex; align-items: center; justify-content: center; padding: 0; color: #fff; flex-shrink: 0; }
+.tcheck[aria-pressed="true"] { background: #BE185D; border-color: #BE185D; }
