@@ -214,3 +214,55 @@ body { font-size: 14px; }
   .grid-cards.grid-areas { display: grid; columns: auto; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
   .grid-cards.grid-areas > * { margin-bottom: 0; }
 }
+
+/* ================= masaüstü düzeni (v7) ================= */
+.nav-foot { display: none; }
+@media (min-width: 1024px) {
+  .shell { grid-template-columns: 228px minmax(0, 1fr); }
+  .nav { padding: 22px 14px 18px; gap: 2px; }
+  .nav .brand { padding: 0 10px 22px; }
+  .nav a { min-height: 40px; border-radius: 10px; font-size: 13.5px; color: #4B5563; }
+  .nav a:hover { background: #F5F6F8; color: #111827; }
+  .nav a[aria-current="page"] { background: #111827; color: #fff; }
+  .nav-foot { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding: 14px 8px 0; border-top: 1px solid var(--line); }
+  .nav-foot .sync { align-self: flex-start; }
+  .main { max-width: 1360px; padding: 26px 32px 48px; gap: 16px; }
+  .main > .top .sync { display: none; }
+  .dtop { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+  .dtop .date { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .dtop h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  .quick { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .qbtn { height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; color: var(--ink2); }
+  .qbtn:hover { border-color: #C9CDD4; background: #FAFAFB; }
+  .qbtn em { font-style: normal; font-size: 11.5px; font-weight: 700; color: #6B7280; background: #F3F4F6; border-radius: 6px; padding: 2px 6px; }
+  .kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  .kpi { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .kpi-l { font-size: 12.5px; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi-v { font-size: 22px; font-weight: 800; letter-spacing: -0.01em; white-space: nowrap; }
+  .kpi-v small { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .kpi-s { font-size: 12px; color: var(--muted); }
+  .dash { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(320px, 1fr); gap: 16px; align-items: start; }
+  .dash-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .dash-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+  .mtable { width: 100%; border-collapse: separate; border-spacing: 0 6px; min-width: 640px; }
+  .mtable th, .mtable td { padding: 0 4px; text-align: center; font-size: 13px; }
+  .mtable thead th { font-size: 11.5px; font-weight: 700; color: var(--muted); padding-bottom: 2px; }
+  .mtable tbody th, .mtable tfoot th { text-align: left; font-weight: 700; white-space: nowrap; padding-right: 10px; }
+  .mtable tbody th:first-child, .mtable thead th:first-child { text-align: left; }
+  .mtable tfoot td, .mtable tfoot th { border-top: 1px solid var(--line2); padding-top: 10px; }
+  .mt-h { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; }
+  .mtable .nut { width: 100%; min-width: 52px; }
+  .flow { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow-y: auto; }
+  .flow li { display: grid; grid-template-columns: 44px 22px minmax(0, 1fr); align-items: center; gap: 6px; min-height: 30px; font-size: 13px; border-radius: 8px; padding: 0 4px; }
+  .flow li:hover { background: #F7F8FA; }
+  .flow b { font-variant-numeric: tabular-nums; font-size: 12.5px; }
+  .flow-t { color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* diğer sayfalarda kartlar 2–3 sütun, boşluksuz */
+  .grid-cards { columns: 360px; }
+}
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .dash { grid-template-columns: minmax(0, 1fr); }
+  .dash-col + .dash-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+@media (min-width: 1024px) and (max-width: 1199px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

@@ -365,7 +365,7 @@ function handleErr(e) {
   else if (!navigator.onLine) setSync('offline');
   else setSync('error');
 }
-function setSync(s) { S.sync = s; const el = document.getElementById('sync'); if (el) el.outerHTML = syncChip(); }
+function setSync(s) { S.sync = s; document.querySelectorAll('.sync').forEach((el) => { el.outerHTML = syncChip(); }); }
 function syncChip() {
   const m = {
     idle: ['', 'cloud', 'Drive'], ok: ['', 'check', 'Drive’a kaydedildi'], pending: ['', 'clock', 'Kaydediliyor…'], saving: ['', 'cloud', 'Kaydediliyor…'],
@@ -374,8 +374,8 @@ function syncChip() {
   }[S.sync] || ['', 'cloud', 'Drive'];
   const clickable = S.sync === 'needsAuth' || S.sync === 'error' || S.sync === 'offline';
   return clickable
-    ? `<button id="sync" type="button" class="sync ${m[0]}" data-act="reauth">${ic(m[1], 16, 2)}${m[2]}</button>`
-    : `<span id="sync" class="sync ${m[0]}" role="status">${ic(m[1], 16, 2)}${m[2]}</span>`;
+    ? `<button type="button" class="sync ${m[0]}" data-act="reauth">${ic(m[1], 16, 2)}${m[2]}</button>`
+    : `<span class="sync ${m[0]}" role="status">${ic(m[1], 16, 2)}${m[2]}</span>`;
 }
 
 /* ================= hesaplar ================= */
@@ -433,7 +433,8 @@ function navBar() {
   const items = [['home', 'grid', 'Alanlar'], ['today', 'home', 'Bugün'], ['sport', 'run', 'Spor'], ['insights', 'chart', 'İçgörüler'], ['settings', 'sliders', 'Ayarlar']];
   const cur = S.route.startsWith('area:') ? 'home' : S.route;
   return `<nav class="nav" aria-label="Ana menü"><div class="brand"><span class="logo">${ic('target', 17, 2)}</span>Hedeflerim</div>${items.map(([r, i, l]) =>
-    `<a href="#${r}" ${cur === r ? 'aria-current="page"' : ''}>${ic(i, 20, cur === r ? 2 : 1.8)}${l}</a>`).join('')}</nav>`;
+    `<a href="#${r}" ${cur === r ? 'aria-current="page"' : ''}>${ic(i, 20, cur === r ? 2 : 1.8)}${l}</a>`).join('')}
+    <div class="nav-foot">${syncChip()}<div class="row" style="gap:8px">${S.user.picture ? `<img src="${esc(S.user.picture)}" alt="" width="28" height="28" style="border-radius:99px" referrerpolicy="no-referrer">` : ''}<div class="col" style="min-width:0"><span style="font-size:12.5px;font-weight:700">${esc(S.user.name || '')}</span><span class="sub" style="font-size:11px;overflow:hidden;text-overflow:ellipsis">${esc(S.user.email)}</span></div></div></div></nav>`;
 }
 function topBar(title, sub, extra = '') {
   return `<header class="top"><div class="col" style="gap:2px">${sub ? `<span class="date">${esc(sub)}</span>` : ''}<h1>${esc(title)}</h1></div><div class="row" style="gap:8px;flex-wrap:wrap">${extra}${syncChip()}</div></header>`;
@@ -537,8 +538,67 @@ function goalForm(a) {
 }
 
 /* ---------- bugün ---------- */
+const DESKTOP_MQ = window.matchMedia('(min-width: 1024px)');
+const isDesktop = () => DESKTOP_MQ.matches;
+if (DESKTOP_MQ.addEventListener) DESKTOP_MQ.addEventListener('change', () => { document.documentElement.classList.toggle('is-desktop', isDesktop()); render(); });
+document.documentElement.classList.toggle('is-desktop', isDesktop());
+
+function dayAgenda(k) {
+  const d = getDay(k); const c = S.config; const out = [];
+  const add = (t, icon, color, text) => { if (t) { let m = toMin(t); if (m < DAY_START_HOUR * 60) m += 1440; out.push({ m, t, icon, color, text }); } };
+  add(d.sleep.wake, 'sun', '#B45309', 'Uyandım');
+  d.water.forEach((t) => add(t, 'drop', '#1D4ED8', '1 bardak su'));
+  d.drinks.forEach((e) => { const dk = c.drinks.find((x) => x.id === e.id) || { name: 'İçecek', icon: 'bardak', color: 'gray' }; add(e.t, dk.icon, col(dk.color)[0], dk.name + (e.v ? ' (' + e.v + ')' : '')); });
+  MEALS.forEach((m) => { const r = d.meals[m.id]; if (r && !r.skip && r.time) { const marks = NUTS.filter((n) => (r.marks || {})[n.k]).map((n) => n.short.toLowerCase()); add(r.time, m.id === 'k' ? 'egg' : 'plate', '#C2410C', m.name + (marks.length ? ': ' + marks.join(', ') : '')); } });
+  Object.entries(d.supps).forEach(([id, t]) => { const sp = c.supps.find((x) => x.id === id) || { name: id, icon: 'kapsul', color: 'sky' }; add(t, sp.icon, col(sp.color)[0], sp.name); });
+  d.sport.forEach((l) => { const a = c.acts.find((x) => x.id === l.act) || { name: l.name, icon: 'dot' }; add(l.start || l.end, a.icon, '#C2410C', a.name + ' · ' + durText(l.min || 0)); });
+  d.reps.forEach((r) => { const mv = c.moves.find((x) => x.id === r.id) || { name: 'Hareket', icon: 'dot', unit: '' }; add(r.t, mv.icon, '#C2410C', mv.name + ' ' + r.n + ' ' + mv.unit); });
+  d.notes.forEach((n) => { const m = n.mood != null ? MOODS[n.mood] : null; add(n.t, m ? m.d : 'pencil', m ? m.fg : '#4B5563', (m ? m.label : 'Not') + (n.text ? ' — ' + n.text : '')); });
+  add(d.sleep.bed, 'moon', '#3730A3', 'Yattım');
+  return out.sort((a, b) => a.m - b.m);
+}
+function viewTodayDesktop(k) {
+  const d = getDay(k); const c = S.config; const goal = c.waterGoal; const n = d.water.length;
+  const sl = sleepMinutes(k); const bi = bmrInfo();
+  const wk = weekKeys(k); const pil = wk.reduce((s2, x) => s2 + (getDay(x).sport || []).filter((e) => e.act === 'pilates').length, 0);
+  const wMin = wk.reduce((s2, x) => s2 + (getDay(x).sport || []).reduce((a, e) => a + (e.min || 0), 0), 0);
+  const mood = d.mood != null ? MOODS[d.mood] : null;
+  const turk = c.drinks.find((x) => x.id === 'turk'); const cay = c.drinks.find((x) => x.id === 'cay');
+  const quick = [
+    ['wake', 'sun', 'Uyandım', '', d.sleep.wake], ['bed', 'moon', 'Yatıyorum', '', d.sleep.bed], ['waterAdd', 'drop', '1 bardak su', '', ''],
+    turk ? ['drinkAdd', turk.icon, 'Türk kahvesi', 'data-id="turk" data-v="Tek"', ''] : null,
+    cay ? ['drinkAdd', cay.icon, 'Çay', 'data-id="cay" data-v=""', ''] : null,
+    ['sportQuick', 'pilates', 'Pilates ' + c.sportGoal.pilMin + ' dk', '', '']
+  ].filter(Boolean).map(([a, i, l, extra, done]) => `<button type="button" class="qbtn" data-act="${a}" ${extra}>${ic(i, 16, 1.9)}<span>${l}</span>${done ? `<em>${esc(done)}</em>` : ''}</button>`).join('');
+  const kpi = (icon, color, label, value, sub, bar) => { const [fg, bg] = col(color); return `<div class="kpi"><div class="row" style="gap:8px"><span class="chip-ic" style="width:28px;height:28px;border-radius:8px;background:${bg};color:${fg}">${ic(icon, 15, 2)}</span><span class="kpi-l">${label}</span></div><div class="kpi-v">${value}</div>${bar != null ? `<div class="bar" style="height:5px"><div style="height:5px;width:${clamp(bar, 0, 100)}%;background:${fg}"></div></div>` : ''}<div class="kpi-s">${sub}</div></div>`; };
+  const kpis = [
+    kpi('drop', 'blue', 'Su', `${n}<small> / ${goal} bardak</small>`, n ? 'Son: ' + esc(d.water[n - 1] || '') : 'Henüz yok', n / goal * 100),
+    kpi('moon', 'indigo', 'Uyku', sl != null ? durText(sl) : '—', d.sleep.wake ? 'Kalkış ' + esc(d.sleep.wake) : 'Uyandım’a dokun', sl != null ? sl / 480 * 100 : null),
+    kpi('heart', mood ? 'teal' : 'gray', 'Mod', mood ? mood.label : '—', d.notes.length ? d.notes.length + ' not' : 'Not yok', null),
+    kpi('flame', 'orange', 'Bazal metabolizma', bi.ready ? fmtK(bi.bmr) + '<small> kcal</small>' : '—', bi.ready ? 'Toplam ~' + fmtK(bi.tdee) + ' kcal' : 'Vücut bilgilerini gir', null),
+    kpi('pilates', 'orange', 'Bu hafta spor', `${pil}<small> / ${c.sportGoal.pilGoal} pilates</small>`, wMin + ' / ' + c.sportGoal.weekMin + ' dk', wMin / Math.max(1, c.sportGoal.weekMin) * 100)
+  ].join('');
+  const g = c.nutGoals;
+  const head = NUTS.map((nu) => `<th scope="col"><span class="mt-h" style="color:${col(nu.color)[0]}">${ic(nu.icon, 15, 1.9)}${nu.short}</span></th>`).join('');
+  const body = MEALS.map((m) => {
+    const r = d.meals[m.id] || {}; const marks = r.marks || {}; const skip = !!r.skip;
+    const cells = skip ? `<td colspan="${NUTS.length}"><div class="skip-box" style="height:36px">${ic('ban', 16, 1.9)}Bu öğünü atladım</div></td>`
+      : NUTS.map((nu) => { const on = !!marks[nu.k]; const [fg, bg] = col(nu.color); return `<td><button type="button" class="nut ${nu.limit ? 'limit' : ''}" style="height:36px;${on ? `background:${bg};color:${fg};border-color:${fg}` : ''}" data-act="mark" data-meal="${m.id}" data-k="${nu.k}" aria-pressed="${on}" aria-label="${m.name}: ${nu.name}">${ic(nu.icon, 17)}</button></td>`; }).join('');
+    return `<tr><th scope="row">${m.name}</th><td>${skip ? '' : `<input class="field time" style="height:36px;width:104px" type="time" value="${esc(r.time || '')}" data-change="mealTime" data-meal="${m.id}" aria-label="${m.name} saati">`}</td>${cells}<td style="text-align:right"><button type="button" class="btn btn-sm" style="height:36px;background:${skip ? '#111827' : '#fff'};color:${skip ? '#fff' : '#374151'};border:1px solid ${skip ? '#111827' : '#E8EAEE'}" data-act="mealSkip" data-meal="${m.id}" aria-pressed="${skip}">Yemedim</button></td></tr>`;
+  }).join('');
+  const foot = NUTS.map((nu) => { const cnt = MEALS.filter((m) => d.meals[m.id] && !d.meals[m.id].skip && (d.meals[m.id].marks || {})[nu.k]).length; const gv = g[nu.k]; const ok = nu.limit ? cnt <= gv : cnt >= gv; return `<td><span style="font-weight:800;color:${nu.limit ? (ok ? '#15803D' : '#B91C1C') : (ok ? '#15803D' : '#374151')}">${cnt}</span><span class="sub"> / ${nu.limit ? '≤' : ''}${gv}</span></td>`; }).join('');
+  const meals = `<section class="card" aria-label="Öğünler"><div class="card-h"><h2>Öğünler</h2><span class="hint">Yediklerine dokun · kesik çerçeve = sınırlanan</span></div>
+    <div class="scroll-x"><table class="mtable"><thead><tr><th scope="col">Öğün</th><th scope="col">Saat</th>${head}<th></th></tr></thead><tbody>${body}</tbody><tfoot><tr><th scope="row">Günün dengesi</th><td></td>${foot}<td></td></tr></tfoot></table></div></section>`;
+  const agenda = dayAgenda(k);
+  const flow = `<section class="card" aria-label="Bugünün akışı"><div class="card-h"><h2>Bugünün akışı</h2><span class="hint">${agenda.length} kayıt</span></div>${agenda.length ? `<ol class="flow">${agenda.map((a) => `<li><b>${esc(a.t)}</b><span class="flow-ic" style="color:${a.color}">${ic(a.icon, 15, 1.9)}</span><span class="flow-t">${esc(a.text)}</span></li>`).join('')}</ol>` : '<p class="empty">Kayıt yaptıkça gün burada saat sırasıyla birikir.</p>'}</section>`;
+  return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>Bugün</h1></div><div class="quick" role="toolbar" aria-label="Hızlı kayıt">${quick}</div></header>
+    <div class="kpis">${kpis}</div>
+    <div class="dash"><div class="dash-col">${meals}<div class="dash-2">${cardDrinks(k)}${cardSupps(k)}</div></div>
+    <div class="dash-col">${cardMood(k)}${flow}${cardSleep(k)}${cardBody(k)}</div></div>`;
+}
 function viewToday() {
   const k = todayKey();
+  if (isDesktop()) return viewTodayDesktop(k);
   return `${healthTabs('today')}${topBar('Bugün', longDate(k))}
     <div class="grid-cards">${cardSleep(k)}${cardBody(k)}${cardWater(k)}${cardDrinks(k)}${cardSupps(k)}${cardMood(k)}${cardBalance(k)}${cardMeals(k)}</div>`;
 }
