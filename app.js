@@ -412,8 +412,8 @@ function weekKeys(key) { const d = dateObj(key); const dow = (d.getDay() + 6) % 
 function navBar() {
   const items = [['home', 'grid', 'Alanlar'], ['today', 'home', 'Bugün'], ['sport', 'run', 'Spor'], ['insights', 'chart', 'İçgörüler'], ['settings', 'sliders', 'Ayarlar']];
   const cur = S.route.startsWith('area:') ? 'home' : S.route;
-  return `<nav class="nav" aria-label="Ana menü"><div class="brand"><span class="logo">${ic('target', 20, 2)}</span>Hedeflerim</div>${items.map(([r, i, l]) =>
-    `<a href="#${r}" ${cur === r ? 'aria-current="page"' : ''}>${ic(i, 24, cur === r ? 2 : 1.8)}${l}</a>`).join('')}</nav>`;
+  return `<nav class="nav" aria-label="Ana menü"><div class="brand"><span class="logo">${ic('target', 17, 2)}</span>Hedeflerim</div>${items.map(([r, i, l]) =>
+    `<a href="#${r}" ${cur === r ? 'aria-current="page"' : ''}>${ic(i, 20, cur === r ? 2 : 1.8)}${l}</a>`).join('')}</nav>`;
 }
 function topBar(title, sub, extra = '') {
   return `<header class="top"><div class="col" style="gap:2px">${sub ? `<span class="date">${esc(sub)}</span>` : ''}<h1>${esc(title)}</h1></div><div class="row" style="gap:8px;flex-wrap:wrap">${extra}${syncChip()}</div></header>`;
@@ -421,7 +421,7 @@ function topBar(title, sub, extra = '') {
 function healthTabs(cur) {
   return `<nav class="subnav" aria-label="Sağlık bölümleri"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a><a href="#today" ${cur === 'today' ? 'aria-current="page"' : ''}>Günlük</a><a href="#sport" ${cur === 'sport' ? 'aria-current="page"' : ''}>Spor</a></nav>`;
 }
-function icoBox(icon, color, size = 40, isz = 22) {
+function icoBox(icon, color, size = 34, isz = 18) {
   const [fg, bg] = col(color);
   return `<div class="chip-ic" style="width:${size}px;height:${size}px;background:${bg};color:${fg}">${ic(icon, isz)}</div>`;
 }
@@ -433,7 +433,7 @@ function addRow(draft, act, placeholder) {
 function viewLogin() {
   const noId = !CLIENT_ID;
   return `<div class="login"><div class="box">
-    <div class="chip-ic" style="width:56px;height:56px;border-radius:18px;background:#111827;color:#fff">${ic('target', 30, 2)}</div>
+    <div class="chip-ic" style="width:56px;height:56px;border-radius:18px;background:#111827;color:#fff">${ic('target', 24, 2)}</div>
     <div class="col" style="gap:6px"><h1 style="font-size:28px;font-weight:800;letter-spacing:-.02em">Hedeflerim</h1>
     <p style="color:#4B5563;font-size:15px;line-height:1.5">Su, öğün, uyku, mod, spor ve diğer hedeflerin tek yerde. Verilerin <b>kendi Google Drive’ında</b>, sadece bu uygulamanın erişebildiği gizli bir klasörde saklanır.</p></div>
     ${noId
@@ -455,7 +455,7 @@ function viewHome() {
     ['pilates', '#C2410C', 'Pilates ' + pilWeek + '/' + c.sportGoal.pilGoal],
     ['heart', '#4B5563', 'Mod ' + mood]
   ];
-  const health = `<a class="area" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 52, 28)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div>${ic('chevR', 20, 2, 'style="color:#6B7280"')}</div>
+  const health = `<a class="area" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>
     <div class="row" style="flex-wrap:wrap;gap:6px">${chips.map(([i, f, t]) => `<span class="tag"><span style="color:${f};display:flex">${ic(i, 16, 2)}</span>${esc(t)}</span>`).join('')}</div></a>`;
   const others = c.areas.map((a) => {
     const gs = a.goals || [];
@@ -463,11 +463,11 @@ function viewHome() {
     const body = gs.length
       ? `<div class="row" style="gap:10px"><div class="bar grow"><div style="width:${Math.round(done / gs.length * 100)}%;background:${col(a.color)[0]}"></div></div><span class="sub" style="font-weight:700;color:#111827">${done}/${gs.length} bugün</span></div>`
       : `<div class="row" style="justify-content:space-between;border:1.5px dashed #D1D5DB;border-radius:14px;padding:10px 12px"><span class="sub" style="font-size:13px">${esc(a.examples || '')}</span><span style="font-size:13px;font-weight:700;color:${col(a.color)[0]};white-space:nowrap">Hedef ekle</span></div>`;
-    return `<a class="area" href="#area:${esc(a.id)}"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 52, 28)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">${esc(a.sub || '')}</span></div>${ic('chevR', 20, 2, 'style="color:#6B7280"')}</div>${body}</a>`;
+    return `<a class="area" href="#area:${esc(a.id)}"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">${esc(a.sub || '')}</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>${body}</a>`;
   }).join('');
   return `${topBar('Alanlarım', longDate(k))}
     <p style="color:#4B5563;font-size:14px;margin-top:-8px">Merhaba${S.user.name ? ' ' + esc(S.user.name) : ''}. Hayatının her alanı için ayrı hedefler.</p>
-    <div class="grid-cards">${health}${others}</div>
+    <div class="grid-cards grid-areas">${health}${others}</div>
     <div class="row" style="gap:8px">${addAreaForm()}</div>`;
 }
 function addAreaForm() {
@@ -489,7 +489,7 @@ function viewArea(id) {
     const ctrl = g.type === 'check'
       ? `<button type="button" class="btn btn-sm" data-act="goalCheck" data-area="${esc(a.id)}" data-goal="${esc(g.id)}" aria-pressed="${v.n ? 'true' : 'false'}" style="background:${v.n ? gf : '#fff'};color:${v.n ? '#fff' : '#374151'};border:1.5px solid ${v.n ? gf : '#E5E7EB'}">${ic('check', 16, 2.6)}Yaptım</button>`
       : `<button type="button" class="btn-icon" data-act="goalDec" data-goal="${esc(g.id)}" aria-label="${esc(g.name)} azalt">${ic('minus', 16, 2.2)}</button><span style="min-width:44px;text-align:center;font-size:20px;font-weight:800">${v.n}</span><button type="button" class="btn btn-sm" data-act="goalInc" data-goal="${esc(g.id)}" style="background:${gf};color:#fff" aria-label="${esc(g.name)} bir ekle">${ic('plus', 16, 2.6)}1</button>`;
-    return `<div class="card" style="gap:10px"><div class="row">${`<div class="chip-ic" style="background:${gb};color:${gf};${g.limit ? 'border:1.5px dashed ' + gf : ''}">${ic(g.icon, 22)}</div>`}<div class="col grow"><span class="name">${esc(g.name)}</span><span class="sub">${status}</span></div>
+    return `<div class="card" style="gap:10px"><div class="row">${`<div class="chip-ic" style="background:${gb};color:${gf};${g.limit ? 'border:1.5px dashed ' + gf : ''}">${ic(g.icon, 18)}</div>`}<div class="col grow"><span class="name">${esc(g.name)}</span><span class="sub">${status}</span></div>
       <button type="button" class="btn-icon" data-act="goalDel" data-area="${esc(a.id)}" data-goal="${esc(g.id)}" aria-label="${esc(g.name)} hedefini sil" style="border:0;color:#6B7280">${ic('x', 16, 2)}</button></div>
       <div class="row" style="justify-content:flex-end;gap:6px">${ctrl}</div></div>`;
   }).join('');
@@ -505,14 +505,14 @@ function goalForm(a) {
     <label class="label" for="ng-name">Hedef adı</label>
     <input id="ng-name" class="field" type="text" data-draft="ngName" value="${esc(S.ui.drafts.ngName || '')}" placeholder="örn. Kitap oku">
     <span class="label">Sembol</span>
-    <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px">${GOAL_ICONS.map((i) => `<button type="button" class="nut" style="height:44px;${ng.icon === i ? `background:${bg};color:${fg};border-color:${fg}` : ''}" data-act="ngIcon" data-v="${i}" aria-pressed="${ng.icon === i}" aria-label="Sembol ${i}">${ic(i, 20)}</button>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px">${GOAL_ICONS.map((i) => `<button type="button" class="nut" style="height:44px;${ng.icon === i ? `background:${bg};color:${fg};border-color:${fg}` : ''}" data-act="ngIcon" data-v="${i}" aria-pressed="${ng.icon === i}" aria-label="Sembol ${i}">${ic(i, 17)}</button>`).join('')}</div>
     <span class="label">Renk</span>
     <div class="row" style="gap:10px">${GOAL_COLORS.map((c) => `<button type="button" data-act="ngColor" data-v="${c}" aria-label="Renk ${c}" aria-pressed="${ng.color === c}" style="width:40px;height:40px;border-radius:99px;border:3px solid ${ng.color === c ? col(c)[0] : 'transparent'};background:${col(c)[0]};box-shadow:inset 0 0 0 3px #fff;padding:0"></button>`).join('')}</div>
     <span class="label">Takip şekli</span>
     <div class="seg" style="grid-template-columns:repeat(2,minmax(0,1fr))"><button type="button" data-act="ngType" data-v="count" aria-pressed="${ng.type === 'count'}">Sayaç (sayfa, dk, TL…)</button><button type="button" data-act="ngType" data-v="check" aria-pressed="${ng.type === 'check'}">Evet / Hayır</button></div>
     ${ng.type === 'count' ? `<div class="row" style="gap:8px"><label class="label" for="ng-target" style="flex-shrink:0">Günlük hedef</label><input id="ng-target" class="field" style="width:90px" type="number" min="0" inputmode="numeric" data-draft="ngTarget" value="${esc(S.ui.drafts.ngTarget || '1')}"><input class="field grow" type="text" data-draft="ngUnit" value="${esc(S.ui.drafts.ngUnit || '')}" placeholder="birim (sayfa, dk…)" aria-label="Birim"></div>
     <label class="row" style="gap:8px;font-size:14px;min-height:44px"><input type="checkbox" data-act="ngLimit" ${ng.limit ? 'checked' : ''} style="width:20px;height:20px">Sınırlama hedefi (en fazla)</label>` : ''}
-    <button type="button" class="btn btn-dark" data-act="goalAdd" data-area="${esc(a.id)}">${ic('check', 18, 2.4)}Hedefi kaydet</button></section>`;
+    <button type="button" class="btn btn-dark" data-act="goalAdd" data-area="${esc(a.id)}">${ic('check', 16, 2.4)}Hedefi kaydet</button></section>`;
 }
 
 /* ---------- bugün ---------- */
@@ -529,8 +529,8 @@ function cardSleep(k) {
   const b = (on, onBg, offBg, onBd, offBd, offFg) => `border:1.5px solid ${on ? onBd : offBd};background:${on ? onBg : offBg};color:${on ? '#fff' : offFg}`;
   return `<section class="card" aria-label="Uyku"><div class="card-h"><h2>Uyku</h2><span class="hint" style="font-weight:600">${sum}</span></div>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
-      <button type="button" data-act="wake" style="height:72px;border-radius:18px;display:flex;align-items:center;gap:10px;padding:0 14px;text-align:left;${b(!!wake, '#B45309', '#FFFBEB', '#B45309', '#FDE68A', '#92400E')}" aria-label="Uyandım: şu anki saati kaydet">${ic('sun', 28)}<span class="col" style="gap:2px"><span style="font-size:15px;font-weight:800">Uyandım</span><span style="font-size:13px;font-weight:600">${wake || 'Dokun, saat yazılsın'}</span></span></button>
-      <button type="button" data-act="bed" style="height:72px;border-radius:18px;display:flex;align-items:center;gap:10px;padding:0 14px;text-align:left;${b(!!bedT, '#312E81', '#EEF2FF', '#312E81', '#C7D2FE', '#3730A3')}" aria-label="Yatıyorum: şu anki saati kaydet">${ic('moon', 28)}<span class="col" style="gap:2px"><span style="font-size:15px;font-weight:800">Yatıyorum</span><span style="font-size:13px;font-weight:600">${bedT || 'Dokun, saat yazılsın'}</span></span></button>
+      <button type="button" data-act="wake" style="height:60px;border-radius:14px;display:flex;align-items:center;gap:10px;padding:0 12px;text-align:left;${b(!!wake, '#B45309', '#FFFBEB', '#B45309', '#FDE68A', '#92400E')}" aria-label="Uyandım: şu anki saati kaydet">${ic('sun', 22)}<span class="col" style="gap:2px"><span style="font-size:15px;font-weight:800">Uyandım</span><span style="font-size:13px;font-weight:600">${wake || 'Dokun, saat yazılsın'}</span></span></button>
+      <button type="button" data-act="bed" style="height:60px;border-radius:14px;display:flex;align-items:center;gap:10px;padding:0 12px;text-align:left;${b(!!bedT, '#312E81', '#EEF2FF', '#312E81', '#C7D2FE', '#3730A3')}" aria-label="Yatıyorum: şu anki saati kaydet">${ic('moon', 22)}<span class="col" style="gap:2px"><span style="font-size:15px;font-weight:800">Yatıyorum</span><span style="font-size:13px;font-weight:600">${bedT || 'Dokun, saat yazılsın'}</span></span></button>
     </div>
     <details data-keep="sleepFix" ${S.ui.open.sleepFix ? 'open' : ''}><summary>Saatleri düzelt</summary><div class="row" style="gap:8px;flex-wrap:wrap;margin-top:8px">
       <label class="col sub" style="gap:4px">Dün yatış<input class="field time" type="time" value="${prevBed}" data-change="prevBed"></label>
@@ -542,13 +542,13 @@ function cardWater(k) {
   const d = getDay(k); const goal = S.config.waterGoal; const n = d.water.length;
   const glasses = Array.from({ length: Math.max(goal, n) }, (_, i) => {
     const on = i < n;
-    return `<button type="button" class="glass" data-act="glass" data-i="${i}" aria-label="${i + 1}. bardak" style="color:${on ? '#1D4ED8' : '#9CA3AF'}"><svg width="30" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M7.1 10h9.8l-1 9.3a1.6 1.6 0 0 1-1.6 1.4H9.7a1.6 1.6 0 0 1-1.6-1.4z" fill="${on ? '#60A5FA' : 'none'}" stroke="none"/><path d="M6 3.5h12l-1.7 15.8a2 2 0 0 1-2 1.7H9.7a2 2 0 0 1-2-1.7z"/></svg></button>`;
+    return `<button type="button" class="glass" data-act="glass" data-i="${i}" aria-label="${i + 1}. bardak" style="color:${on ? '#1D4ED8' : '#9CA3AF'}"><svg width="22" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M7.1 10h9.8l-1 9.3a1.6 1.6 0 0 1-1.6 1.4H9.7a1.6 1.6 0 0 1-1.6-1.4z" fill="${on ? '#60A5FA' : 'none'}" stroke="none"/><path d="M6 3.5h12l-1.7 15.8a2 2 0 0 1-2 1.7H9.7a2 2 0 0 1-2-1.7z"/></svg></button>`;
   }).join('');
-  return `<section class="card" aria-label="Su"><div class="row" style="gap:12px">${icoBox('drop', 'blue', 44, 24)}<div class="col grow"><span style="font-size:17px;font-weight:700">Su</span><span class="sub" style="font-size:13px">Günlük hedef ${goal} bardak</span></div><span style="font-size:30px;font-weight:800;color:#1D4ED8">${n}<span style="font-size:16px;color:#4B5563;font-weight:600">/${goal}</span></span></div>
+  return `<section class="card" aria-label="Su"><div class="row" style="gap:12px">${icoBox('drop', 'blue', 36, 18)}<div class="col grow"><span style="font-size:17px;font-weight:700">Su</span><span class="sub" style="font-size:13px">Günlük hedef ${goal} bardak</span></div><span style="font-size:24px;font-weight:800;color:#1D4ED8">${n}<span style="font-size:16px;color:#4B5563;font-weight:600">/${goal}</span></span></div>
     <div class="bar"><div style="width:${Math.min(100, Math.round(n / goal * 100))}%;background:#2563EB"></div></div>
     <div class="glasses">${glasses}</div>
     ${n ? `<div class="row sub" style="align-items:flex-start;gap:6px;line-height:1.5">${ic('clock', 14, 2)}<span>${d.water.map((t) => esc(t || 'saat yok')).join(' · ')}</span></div>` : ''}
-    <div class="row" style="gap:10px"><button type="button" class="btn btn-ghost" data-act="waterUndo">${ic('minus', 18, 2.2)}Geri al</button><button type="button" class="btn btn-blue grow" data-act="waterAdd">${ic('plus', 18, 2.4)}1 bardak içtim</button></div></section>`;
+    <div class="row" style="gap:10px"><button type="button" class="btn btn-ghost" data-act="waterUndo">${ic('minus', 16, 2.2)}Geri al</button><button type="button" class="btn btn-blue grow" data-act="waterAdd">${ic('plus', 16, 2.4)}1 bardak içtim</button></div></section>`;
 }
 function cardDrinks(k) {
   const d = getDay(k);
@@ -575,18 +575,18 @@ function cardSupps(k) {
 }
 function cardMood(k) {
   const d = getDay(k);
-  const faces = MOODS.map((m, i) => { const on = d.mood === i; return `<button type="button" class="face" data-act="mood" data-i="${i}" aria-pressed="${on}" style="${on ? `background:${m.bg};border-color:${m.fg};color:${m.fg}` : ''}">${ic(m.d, 30, 1.7)}<span style="${on ? 'color:' + m.fg : ''}">${m.label}</span></button>`; }).join('');
+  const faces = MOODS.map((m, i) => { const on = d.mood === i; return `<button type="button" class="face" data-act="mood" data-i="${i}" aria-pressed="${on}" style="${on ? `background:${m.bg};border-color:${m.fg};color:${m.fg}` : ''}">${ic(m.d, 24, 1.7)}<span style="${on ? 'color:' + m.fg : ''}">${m.label}</span></button>`; }).join('');
   const tags = FEELINGS.map((f) => `<button type="button" class="pill" data-act="feel" data-v="${f}" aria-pressed="${!!S.ui.feel[f]}">${f}</button>`).join('');
   const notes = d.notes.slice().reverse().map((n) => {
     const m = n.mood != null ? MOODS[n.mood] : null;
     const meta = [n.t, m ? m.label : null].concat(n.tags || []).filter(Boolean).join(' · ');
-    return `<div class="row" style="align-items:flex-start"><div class="chip-ic" style="width:36px;height:36px;background:${m ? m.bg : '#F3F4F6'};color:${m ? m.fg : '#4B5563'}">${ic(m ? m.d : 'pencil', 22, 1.7)}</div><div class="col grow" style="gap:2px"><span class="sub" style="font-weight:600">${esc(meta)}</span><span style="font-size:14px;line-height:1.45;white-space:pre-line">${esc(n.text || '—')}</span></div><button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="noteDel" data-id="${esc(n.id)}" aria-label="Notu sil">${ic('x', 16, 2)}</button></div>`;
+    return `<div class="row" style="align-items:flex-start"><div class="chip-ic" style="width:30px;height:30px;background:${m ? m.bg : '#F3F4F6'};color:${m ? m.fg : '#4B5563'}">${ic(m ? m.d : 'pencil', 18, 1.7)}</div><div class="col grow" style="gap:2px"><span class="sub" style="font-weight:600">${esc(meta)}</span><span style="font-size:14px;line-height:1.45;white-space:pre-line">${esc(n.text || '—')}</span></div><button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="noteDel" data-id="${esc(n.id)}" aria-label="Notu sil">${ic('x', 16, 2)}</button></div>`;
   }).join('');
   return `<section class="card" aria-label="Mod ve notlar"><div class="card-h"><h2>Modum</h2><span class="hint">${d.mood != null ? 'Şu an: ' + MOODS[d.mood].label : 'Bugün nasıl hissediyorsun?'}</span></div>
     <div class="faces">${faces}</div><div class="row" style="flex-wrap:wrap;gap:6px">${tags}</div>
     <label class="label" for="note">Şu an ne oluyor?</label>
     <textarea id="note" class="field" rows="3" data-draft="note" placeholder="Aklından geçeni ya da o an olanı yaz…">${esc(S.ui.drafts.note || '')}</textarea>
-    <button type="button" class="btn btn-dark" data-act="noteAdd">${ic('pencil', 18, 2)}Not ekle</button>
+    <button type="button" class="btn btn-dark" data-act="noteAdd">${ic('pencil', 16, 2)}Not ekle</button>
     <div class="col divider" style="gap:10px">${notes || '<p class="empty">Bugün henüz not yok. Yazdıkların saatiyle burada listelenir.</p>'}</div></section>`;
 }
 function cardBalance(k) {
@@ -596,7 +596,7 @@ function cardBalance(k) {
     const [fg, bg] = col(nu.color); const goal = g[nu.k];
     const value = nu.limit ? c + ' / ≤' + goal : c + ' / ' + goal;
     const status = nu.limit ? (c > goal ? '#B91C1C' : '#15803D') : (c >= goal ? '#15803D' : '#374151');
-    return `<div class="col" style="align-items:center;gap:6px;text-align:center"><div class="chip-ic" style="width:44px;height:44px;border-radius:14px;background:${bg};color:${fg};border:1.5px ${nu.limit ? 'dashed' : 'solid'} ${fg}">${ic(nu.icon, 22)}</div><span style="font-size:11px;font-weight:600;line-height:1.2;color:#374151;min-height:26px">${nu.short}</span><span style="font-size:13px;font-weight:800;color:${status}">${value}</span></div>`;
+    return `<div class="col" style="align-items:center;gap:6px;text-align:center"><div class="chip-ic" style="width:36px;height:36px;border-radius:11px;background:${bg};color:${fg};border:1.5px ${nu.limit ? 'dashed' : 'solid'} ${fg}">${ic(nu.icon, 18)}</div><span style="font-size:11px;font-weight:600;line-height:1.2;color:#374151;min-height:26px">${nu.short}</span><span style="font-size:13px;font-weight:800;color:${status}">${value}</span></div>`;
   }).join('');
   return `<section class="card" aria-label="Günün dengesi"><div class="card-h"><h2>Günün dengesi</h2><span class="hint">öğün sayısı / hedef</span></div><div class="nuts">${cells}</div>
     <div class="row divider sub" style="gap:14px;font-size:11px"><span class="row" style="gap:6px"><span style="width:12px;height:12px;border-radius:4px;border:1.5px solid #4B5563"></span>Hedeflenen</span><span class="row" style="gap:6px"><span style="width:12px;height:12px;border-radius:4px;border:1.5px dashed #4B5563"></span>Sınırlanan</span></div></section>`;
@@ -607,11 +607,11 @@ function cardMeals(k) {
     const r = d.meals[m.id] || {}; const marks = r.marks || {}; const skip = !!r.skip;
     const n = Object.values(marks).filter(Boolean).length;
     const summary = skip ? 'Yemedim' : (!r.time ? 'Saati gir' : (n ? n + ' işaret' : 'Ne yedin?'));
-    const chips = NUTS.map((nu) => { const on = !!marks[nu.k]; const [fg, bg] = col(nu.color); return `<button type="button" class="nut ${nu.limit ? 'limit' : ''}" data-act="mark" data-meal="${m.id}" data-k="${nu.k}" aria-pressed="${on}" aria-label="${m.name}: ${nu.name}" style="${on ? `background:${bg};color:${fg};border-color:${fg}` : ''}">${ic(nu.icon, 22)}</button>`; }).join('');
+    const chips = NUTS.map((nu) => { const on = !!marks[nu.k]; const [fg, bg] = col(nu.color); return `<button type="button" class="nut ${nu.limit ? 'limit' : ''}" data-act="mark" data-meal="${m.id}" data-k="${nu.k}" aria-pressed="${on}" aria-label="${m.name}: ${nu.name}" style="${on ? `background:${bg};color:${fg};border-color:${fg}` : ''}">${ic(nu.icon, 18)}</button>`; }).join('');
     return `<div class="col" style="gap:10px;padding:12px 0;border-top:1px solid #F0F1F3"><div class="row" style="gap:8px"><div class="col grow"><span style="font-size:15px;font-weight:700">${m.name}</span><span class="sub">${summary}</span></div>
       ${skip ? '' : `<input class="field time" type="time" value="${esc(r.time || '')}" data-change="mealTime" data-meal="${m.id}" aria-label="${m.name} saati">`}
       <button type="button" class="btn btn-sm" data-act="mealSkip" data-meal="${m.id}" aria-pressed="${skip}" style="flex-shrink:0;background:${skip ? '#111827' : '#fff'};color:${skip ? '#fff' : '#374151'};border:1.5px solid ${skip ? '#111827' : '#E5E7EB'}">Yemedim</button></div>
-      ${skip ? `<div class="skip-box">${ic('ban', 18, 1.9)}Bu öğünü atladım</div>` : `<div class="nuts">${chips}</div>`}</div>`;
+      ${skip ? `<div class="skip-box">${ic('ban', 16, 1.9)}Bu öğünü atladım</div>` : `<div class="nuts">${chips}</div>`}</div>`;
   }).join('');
   return `<section class="card" aria-label="Öğünler" style="gap:4px"><div class="card-h" style="margin-bottom:6px"><h2>Öğünler</h2><span class="hint">Yediklerine dokun</span></div>${rows}</section>`;
 }
@@ -627,21 +627,21 @@ function viewSport() {
     return `<div aria-label="${TR_D3[(i + 1) % 7]}: ${done ? 'spor yapıldı' : 'kayıt yok'}"><span class="dot" style="background:${done ? '#C2410C' : '#fff'};border-color:${done || isT ? '#C2410C' : '#E5E7EB'}">${done ? ic('check', 16, 2.8) : ''}</span><span style="${isT ? 'font-weight:800' : ''}">${isT ? 'Bugün' : TR_D3[(i + 1) % 7]}</span></div>`;
   }).join('');
   const act = c.acts.find((a) => a.id === sp.act) || c.acts[0];
-  const acts = c.acts.map((a) => `<button type="button" class="act" data-act="sportAct" data-id="${esc(a.id)}" aria-pressed="${a.id === act.id}">${ic(a.icon, 24)}<span>${esc(a.name)}</span></button>`).join('');
+  const acts = c.acts.map((a) => `<button type="button" class="act" data-act="sportAct" data-id="${esc(a.id)}" aria-pressed="${a.id === act.id}">${ic(a.icon, 20)}<span>${esc(a.name)}</span></button>`).join('');
   let control = '';
   if (sp.mode === 'idle') {
-    control = `<div class="col" style="gap:8px"><button type="button" class="btn btn-sport" style="height:64px;border-radius:18px;font-size:17px;font-weight:800" data-act="sportStart">${ic('play', 22, 0, 'fill="currentColor"')}Başladım · ${esc(act.name)}</button>
-      <button type="button" class="btn" style="height:52px;border-radius:16px;border:1.5px solid #FDBA74;background:#FFF7ED;color:#9A3412" data-act="sportQuick">${ic('pilates', 20, 1.9)}Pilates yaptım · ${sg.pilMin} dk</button>
+    control = `<div class="col" style="gap:8px"><button type="button" class="btn btn-sport" style="height:52px;border-radius:14px;font-size:15px;font-weight:800" data-act="sportStart">${ic('play', 18, 0, 'fill="currentColor"')}Başladım · ${esc(act.name)}</button>
+      <button type="button" class="btn" style="height:52px;border-radius:16px;border:1.5px solid #FDBA74;background:#FFF7ED;color:#9A3412" data-act="sportQuick">${ic('pilates', 17, 1.9)}Pilates yaptım · ${sg.pilMin} dk</button>
       <button type="button" class="btn-link" data-act="sportManual">Unuttum, sonradan ekle</button></div>`;
   } else if (sp.mode === 'running') {
     control = `<div class="col" style="gap:10px;background:#FFF7ED;border:1.5px solid #FDBA74;border-radius:18px;padding:14px"><div class="row"><span style="width:10px;height:10px;border-radius:99px;background:#C2410C"></span><span class="name grow" style="font-size:15px">${esc(act.name)} sürüyor</span><span class="sub" style="font-size:13px">başlangıç ${esc(sp.start)}</span></div>
-      <div class="row" style="gap:8px"><button type="button" class="btn btn-ghost" style="height:56px" data-act="sportCancel">Vazgeç</button><button type="button" class="btn btn-dark grow" style="height:56px;font-size:17px;font-weight:800" data-act="sportFinish">${ic('stop', 18, 0, 'fill="currentColor"')}Bitirdim</button></div></div>`;
+      <div class="row" style="gap:8px"><button type="button" class="btn btn-ghost" style="height:56px" data-act="sportCancel">Vazgeç</button><button type="button" class="btn btn-dark grow" style="height:56px;font-size:17px;font-weight:800" data-act="sportFinish">${ic('stop', 16, 0, 'fill="currentColor"')}Bitirdim</button></div></div>`;
   } else {
     const dm = diffMin(sp.start, sp.end);
     control = `<div class="col" style="gap:14px;border:1.5px solid #E5E7EB;border-radius:18px;padding:14px"><div class="card-h"><span class="name" style="font-size:15px">${esc(act.name)} · kaydı tamamla</span><span style="font-size:15px;font-weight:800;color:#C2410C">${dm ? durText(dm) : '— dk'}</span></div>
       <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><label class="col label" style="gap:4px">Başlangıç<input class="field" type="time" value="${esc(sp.start)}" data-change="sportStartT"></label><label class="col label" style="gap:4px">Bitiş<input class="field" type="time" value="${esc(sp.end)}" data-change="sportEndT"></label></div>
       <span class="label">Ne kadar zorladı?</span><div class="seg" style="grid-template-columns:repeat(3,minmax(0,1fr))">${INTENS.map((t, i) => `<button type="button" data-act="sportInt" data-i="${i}" aria-pressed="${sp.intensity === i}">${t}</button>`).join('')}</div>
-      <span class="label">Sonra nasıl hissettin?</span><div class="faces">${MOODS.map((m, i) => { const on = sp.feel === i; return `<button type="button" class="face" style="padding:8px 0;${on ? `background:${m.bg};border-color:${m.fg};color:${m.fg}` : ''}" data-act="sportFeel" data-i="${i}" aria-pressed="${on}" aria-label="${m.label}">${ic(m.d, 26, 1.7)}</button>`; }).join('')}</div>
+      <span class="label">Sonra nasıl hissettin?</span><div class="faces">${MOODS.map((m, i) => { const on = sp.feel === i; return `<button type="button" class="face" style="padding:8px 0;${on ? `background:${m.bg};border-color:${m.fg};color:${m.fg}` : ''}" data-act="sportFeel" data-i="${i}" aria-pressed="${on}" aria-label="${m.label}">${ic(m.d, 20, 1.7)}</button>`; }).join('')}</div>
       <div class="row" style="gap:8px"><button type="button" class="btn btn-ghost" data-act="sportCancel">Vazgeç</button><button type="button" class="btn btn-sport grow" data-act="sportSave">Kaydet</button></div></div>`;
   }
   const moves = c.moves.map((mv) => {
@@ -652,7 +652,7 @@ function viewSport() {
   }).join('');
   const log = d.sport.slice().reverse().map((l) => {
     const a = c.acts.find((x) => x.id === l.act) || { name: l.name, icon: 'dot' }; const m = l.feel != null ? MOODS[l.feel] : null;
-    return `<div class="row">${icoBox(a.icon, 'orange')}<div class="col grow"><span class="name">${esc(a.name || l.name)}</span><span class="sub">${l.start && l.end ? esc(l.start) + '–' + esc(l.end) + ' · ' : ''}${durText(l.min || 0)} · ${INTENS[l.intensity ?? 1]}</span></div>${m ? `<span class="chip-ic" style="width:36px;height:36px;background:${m.bg};color:${m.fg}" title="Sonra: ${m.label}">${ic(m.d, 22, 1.7)}</span>` : ''}<button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="sportDel" data-id="${esc(l.id)}" aria-label="Kaydı sil">${ic('x', 16, 2)}</button></div>`;
+    return `<div class="row">${icoBox(a.icon, 'orange')}<div class="col grow"><span class="name">${esc(a.name || l.name)}</span><span class="sub">${l.start && l.end ? esc(l.start) + '–' + esc(l.end) + ' · ' : ''}${durText(l.min || 0)} · ${INTENS[l.intensity ?? 1]}</span></div>${m ? `<span class="chip-ic" style="width:30px;height:30px;background:${m.bg};color:${m.fg}" title="Sonra: ${m.label}">${ic(m.d, 18, 1.7)}</span>` : ''}<button type="button" class="btn-icon" style="border:0;color:#6B7280" data-act="sportDel" data-id="${esc(l.id)}" aria-label="Kaydı sil">${ic('x', 16, 2)}</button></div>`;
   }).join('');
   const unit = S.ui.newUnit || 'tekrar';
   return `${healthTabs('sport')}${topBar('Spor', longDate(k))}
@@ -662,7 +662,7 @@ function viewSport() {
         <div class="col" style="gap:6px"><span style="font-size:24px;font-weight:800">${pil}<span style="font-size:15px;color:#4B5563;font-weight:600"> / ${sg.pilGoal} pilates</span></span><div class="bar"><div style="width:${Math.min(100, Math.round(pil / sg.pilGoal * 100))}%;background:#C2410C"></div></div></div>
         <div class="col" style="gap:6px"><span style="font-size:24px;font-weight:800">${wMin}<span style="font-size:15px;color:#4B5563;font-weight:600"> / ${sg.weekMin} dk</span></span><div class="bar"><div style="width:${Math.min(100, Math.round(wMin / sg.weekMin * 100))}%;background:#C2410C"></div></div></div>
       </div><div class="week7">${week}</div></section>
-    <section class="card" aria-label="Aktivite"><h2 style="font-size:17px;font-weight:700">Ne yapıyorsun?</h2><div class="acts">${acts}<button type="button" class="act" style="border-style:dashed" data-act="toggleOpen" data-v="newAct">${ic('plus', 22, 2.2)}<span>Ekle</span></button></div>
+    <section class="card" aria-label="Aktivite"><h2 style="font-size:17px;font-weight:700">Ne yapıyorsun?</h2><div class="acts">${acts}<button type="button" class="act" style="border-style:dashed" data-act="toggleOpen" data-v="newAct">${ic('plus', 18, 2.2)}<span>Ekle</span></button></div>
       ${S.ui.open.newAct ? `<div class="row" style="gap:8px"><input class="field grow" type="text" data-draft="newAct" value="${esc(S.ui.drafts.newAct || '')}" placeholder="örn. Dans, Tenis" aria-label="Yeni aktivite adı"><button type="button" class="btn btn-dark btn-sm" data-act="addAct">Ekle</button></div>` : ''}
       ${control}</section>
     <section class="card" aria-label="Tekrarlı hareketler"><div class="card-h"><h2>Tekrarlı hareketler</h2><span class="hint">Her dokunuş bir set, saatiyle</span></div>${moves}
@@ -720,21 +720,21 @@ function viewInsights() {
   const hl = (k) => (k === sel ? 'background:#EEF2FF;' : '');
   const lane = (label, iconName, color, cellFn) => `<div class="lane"><span class="lab"><span style="color:${color};display:flex">${ic(iconName, 16, 2)}</span>${label}</span>${last14.map((k) => `<div class="cell" style="${hl(k)}">${cellFn(k, s(k))}</div>`).join('')}</div>`;
   const lanes = `<div class="lanes"><div class="lane"><span></span>${dayCells}</div>
-    ${lane('Mod', 'heart', '#4B5563', (k, x) => { if (!x || x.mood == null) return '<span style="color:#9CA3AF">·</span>'; const m = MOODS[clamp(Math.round(x.mood) - 1, 0, 4)]; return `<span class="chip-ic" style="width:30px;height:30px;border-radius:10px;background:${m.bg};color:${m.fg}" title="${m.label}">${ic(m.d, 20, 1.8)}</span>`; })}
+    ${lane('Mod', 'heart', '#4B5563', (k, x) => { if (!x || x.mood == null) return '<span style="color:#9CA3AF">·</span>'; const m = MOODS[clamp(Math.round(x.mood) - 1, 0, 4)]; return `<span class="chip-ic" style="width:30px;height:30px;border-radius:10px;background:${m.bg};color:${m.fg}" title="${m.label}">${ic(m.d, 17, 1.8)}</span>`; })}
     ${lane('Uyku (sa)', 'moon', '#3730A3', (k, x) => (x && x.sleepH != null ? `<span style="color:${x.sleepH < 7 ? '#B45309' : '#3730A3'}">${fmt1(x.sleepH)}</span>` : '<span style="color:#9CA3AF">·</span>'))}
-    ${lane('Kahvaltı', 'egg', '#C2410C', (k, x) => (x && x.bk != null ? `<span style="color:${x.bk ? '#15803D' : '#9CA3AF'}">${ic(x.bk ? 'check' : 'minus', 18, 2.4)}</span>` : '<span style="color:#9CA3AF">·</span>'))}
+    ${lane('Kahvaltı', 'egg', '#C2410C', (k, x) => (x && x.bk != null ? `<span style="color:${x.bk ? '#15803D' : '#9CA3AF'}">${ic(x.bk ? 'check' : 'minus', 16, 2.4)}</span>` : '<span style="color:#9CA3AF">·</span>'))}
     ${lane('Rafine şeker', 'cube', '#BE185D', (k, x) => (x && x.sugar ? `<span style="min-width:24px;height:24px;border-radius:8px;background:#FBCFE8;color:#9D174D;display:flex;align-items:center;justify-content:center">${x.sugar}</span>` : (x && x.sugar === 0 ? '<span style="color:#9CA3AF">0</span>' : '<span style="color:#9CA3AF">·</span>')))}
     ${lane('Kahve', 'turk', '#78350F', (k, x) => (x && x.coffee != null ? `<span style="min-width:24px;height:24px;border-radius:8px;background:${x.coffee >= 3 ? '#78350F' : '#F5EBDD'};color:${x.coffee >= 3 ? '#fff' : '#78350F'};display:flex;align-items:center;justify-content:center">${x.coffee}</span>` : '<span style="color:#9CA3AF">·</span>'))}
     ${lane('Su', 'drop', '#1D4ED8', (k, x) => (x && x.water ? `<span style="color:#1D4ED8">${x.water}</span>` : '<span style="color:#9CA3AF">·</span>'))}
     ${lane('Spor (dk)', 'run', '#C2410C', (k, x) => (x && x.sportMin ? `<span style="color:#C2410C">${x.sportMin}</span>` : '<span style="color:#9CA3AF">·</span>'))}
   </div>`;
-  return `${topBar('İçgörüler', 'Mod ve hislerin neyle birlikte değişiyor?', `<button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 18, 2)}CSV indir</button>`)}
-    <div class="card" style="flex-direction:row;flex-wrap:wrap;align-items:center;border:1.5px dashed #D1D5DB;box-shadow:none">${ic('info', 22, 1.9, 'style="color:#4B5563"')}<span style="font-size:14px;color:#374151;flex:1 1 280px">${n < 14 ? `Şu ana kadar <b>${n} günlük</b> kayıt var. Güvenilir karşılaştırmalar için en az 14 gün kayıt öneririz; kartlar sen kayıt tuttukça dolacak.` : `<b>${n} günlük</b> kayıttan hesaplandı.`}</span><div class="row" style="flex:0 1 240px;gap:10px"><div class="bar grow"><div style="width:${Math.min(100, Math.round(n / 14 * 100))}%;background:#111827"></div></div><b style="font-size:13px;white-space:nowrap">${Math.min(n, 14)} / 14 gün</b></div></div>
+  return `${topBar('İçgörüler', 'Mod ve hislerin neyle birlikte değişiyor?', `<button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 16, 2)}CSV indir</button>`)}
+    <div class="card" style="flex-direction:row;flex-wrap:wrap;align-items:center;border:1.5px dashed #D1D5DB;box-shadow:none">${ic('info', 18, 1.9, 'style="color:#4B5563"')}<span style="font-size:14px;color:#374151;flex:1 1 280px">${n < 14 ? `Şu ana kadar <b>${n} günlük</b> kayıt var. Güvenilir karşılaştırmalar için en az 14 gün kayıt öneririz; kartlar sen kayıt tuttukça dolacak.` : `<b>${n} günlük</b> kayıttan hesaplandı.`}</span><div class="row" style="flex:0 1 240px;gap:10px"><div class="bar grow"><div style="width:${Math.min(100, Math.round(n / 14 * 100))}%;background:#111827"></div></div><b style="font-size:13px;white-space:nowrap">${Math.min(n, 14)} / 14 gün</b></div></div>
     <h2 class="big-h">Öne çıkanlar</h2><div class="grid-cards">${defs.map((d) => insightCard(d, keys)).join('')}</div>
     <section class="card"><div class="card-h" style="flex-wrap:wrap"><h2 class="big-h">Gün gün yan yana</h2><span class="hint">Bir güne dokun, aşağıda o günün saat saat akışını gör</span></div><div class="scroll-x">${lanes}</div></section>
     ${dayTimeline(sel)}
     <h2 class="big-h">Saate bağlı ilişkiler</h2><div class="grid-cards">${timeDefs.map((d) => insightCard(d, keys)).join('')}</div>
-    <div class="card" style="flex-direction:row;gap:14px">${ic('info', 24, 1.9, 'style="color:#374151"')}<div class="col" style="gap:4px"><h3 style="font-size:15px;font-weight:700">Birlikte görünmek, sebep olmak demek değil</h3><p class="sub" style="font-size:14px;line-height:1.5">Kartlar sana nereye bakacağını söyler; kararı sen verirsin. Bir grupta 5 günden az kayıt varsa kart “Az veri” der.</p></div></div>`;
+    <div class="card" style="flex-direction:row;gap:14px">${ic('info', 20, 1.9, 'style="color:#374151"')}<div class="col" style="gap:4px"><h3 style="font-size:15px;font-weight:700">Birlikte görünmek, sebep olmak demek değil</h3><p class="sub" style="font-size:14px;line-height:1.5">Kartlar sana nereye bakacağını söyler; kararı sen verirsin. Bir grupta 5 günden az kayıt varsa kart “Az veri” der.</p></div></div>`;
 }
 function dayTimeline(k) {
   const d = getDay(k); const c = S.config;
@@ -759,7 +759,7 @@ function dayTimeline(k) {
   const tickMarks = ticks.map((t) => `<span class="tl-tick" style="left:${t.left}"></span>`).join('');
   return `<section class="card" aria-label="Gün içinde"><div class="card-h" style="flex-wrap:wrap"><div class="col"><h2 class="big-h">Gün içinde</h2><span class="hint" style="font-size:13px">Seçili gün: <b style="color:#111827">${esc(longDate(k))}</b></span></div></div>
     ${agenda.length ? `<div class="scroll-x"><div class="tl"><div class="tl-row"><span></span><div style="position:relative;height:18px">${ticks.map((t) => `<span style="position:absolute;left:${t.left};transform:translateX(-50%);font-size:11px;font-weight:600;color:#4B5563">${t.label}</span>`).join('')}</div></div>
-      ${lanes.map((l) => `<div class="tl-row"><span class="lab row" style="font-size:13px;font-weight:700;gap:6px"><span style="color:${l.color};display:flex">${ic(l.icon, 16, 2)}</span>${l.label}</span><div class="tl-track">${tickMarks}${l.events.map((e) => { const left = pos(e.t); return left ? `<span class="tl-ev" role="img" aria-label="${esc(e.tip)}" title="${esc(e.tip)}" style="left:${left};background:${e.bg};color:${e.fg}">${ic(e.icon, 18, 1.9)}</span>` : ''; }).join('')}</div></div>`).join('')}</div></div>
+      ${lanes.map((l) => `<div class="tl-row"><span class="lab row" style="font-size:13px;font-weight:700;gap:6px"><span style="color:${l.color};display:flex">${ic(l.icon, 16, 2)}</span>${l.label}</span><div class="tl-track">${tickMarks}${l.events.map((e) => { const left = pos(e.t); return left ? `<span class="tl-ev" role="img" aria-label="${esc(e.tip)}" title="${esc(e.tip)}" style="left:${left};background:${e.bg};color:${e.fg}">${ic(e.icon, 16, 1.9)}</span>` : ''; }).join('')}</div></div>`).join('')}</div></div>
     <div class="col divider" style="gap:6px"><h3 style="font-size:15px;font-weight:700">Saat sırasıyla</h3><ol class="agenda">${agenda.map((a) => `<li><b>${esc(a.t)}</b><span style="width:10px;height:10px;border-radius:3px;background:${a.color};flex-shrink:0"></span><span style="color:#374151">${esc(a.text)}</span></li>`).join('')}</ol></div>`
     : '<p class="empty">Bu gün için saatli kayıt yok.</p>'}</section>`;
 }
@@ -773,7 +773,7 @@ function viewSettings() {
   <div class="grid-cards">
     <section class="card"><div class="row">${S.user.picture ? `<img src="${esc(S.user.picture)}" alt="" width="44" height="44" style="border-radius:99px" referrerpolicy="no-referrer">` : icoBox('target', 'gray', 44)}<div class="col grow"><span class="name">${esc(S.user.name || 'Hesabım')}</span><span class="sub">${esc(S.user.email)}</span></div></div>
       <p class="sub" style="font-size:13px;line-height:1.5">Kayıtların önce bu cihazda saklanır, sonra Google Drive’ındaki gizli uygulama klasörüne kaydedilir. Telefon ve bilgisayarda aynı hesapla girdiğinde aynı verileri görürsün. Bu klasörü Drive’da dosya olarak görmezsin; Drive › Ayarlar › Uygulamaları yönet bölümünden silebilirsin.</p>
-      <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-ghost btn-sm" data-act="syncNow">${ic('cloud', 18, 2)}Şimdi eşitle</button><button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 18, 2)}CSV indir</button><button type="button" class="btn btn-ghost btn-sm" data-act="signout" style="color:#991B1B">${ic('logout', 18, 2)}Çıkış yap</button></div></section>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-ghost btn-sm" data-act="syncNow">${ic('cloud', 16, 2)}Şimdi eşitle</button><button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 16, 2)}CSV indir</button><button type="button" class="btn btn-ghost btn-sm" data-act="signout" style="color:#991B1B">${ic('logout', 16, 2)}Çıkış yap</button></div></section>
     <section class="card"><h2 style="font-size:17px;font-weight:700">Hedefler</h2>
       ${num('Günlük su (bardak)', 'waterGoal', 1, 30)}${num('Haftalık pilates (seans)', 'sportGoal.pilGoal', 0, 14)}${num('Pilates süresi (dk)', 'sportGoal.pilMin', 5, 180)}${num('Haftalık toplam spor (dk)', 'sportGoal.weekMin', 0, 2000)}
       ${NUTS.map((n) => num(n.name + (n.limit ? ' (en fazla, öğün)' : ' (öğün)'), 'nutGoals.' + n.k, 0, 4)).join('')}</section>

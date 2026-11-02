@@ -158,3 +158,59 @@ details > summary { cursor: pointer; font-size: 13px; color: var(--ink2); font-w
 .gbtn { height: 52px; border-radius: 14px; border: 1.5px solid var(--field); background: #fff; font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--ink); }
 .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; z-index: 50; max-width: calc(100% - 32px); }
 @media (min-width: 900px) { .toast { bottom: 24px; } }
+
+/* ================= sade görünüm (v5) ================= */
+:root { --bg: #F5F6F8; --line: #E8EAEE; --line2: #F1F2F4; --radius: 20px; --shadow: none; }
+body { font-size: 14px; }
+.main { gap: 14px; }
+.top h1 { font-size: 26px; }
+.top .date { font-size: 13px; }
+.card { border: 1px solid var(--line); padding: 16px; gap: 12px; }
+.card-h h2 { font-size: 15px; }
+.big-h { font-size: 18px; }
+.area { border: 1px solid var(--line); padding: 16px; gap: 12px; }
+.chip-ic { border-radius: 10px; }
+.name { font-size: 13.5px; }
+.btn { height: 44px; font-size: 14px; border-radius: 12px; }
+.btn-sm { height: 40px; padding: 0 12px; border-radius: 10px; font-size: 13px; }
+.btn-icon { width: 40px; height: 40px; border-radius: 10px; }
+.field { height: 40px; border-radius: 10px; font-size: 14px; border-width: 1px; }
+.field.time { width: 108px; }
+.pill { height: 34px; padding: 0 12px; font-size: 12.5px; border-width: 1px; }
+.seg { border-radius: 12px; }
+.seg button { height: 36px; font-size: 12.5px; }
+.glass { width: 26px; height: 40px; }
+.glasses { gap: 4px; }
+.face { padding: 8px 0 6px; border-radius: 12px; border-width: 1px; gap: 4px; }
+.face span { font-size: 10.5px; }
+.nut { height: 40px; border-radius: 10px; border-width: 1px; }
+.nuts { gap: 6px; }
+.act { height: 60px; border-radius: 12px; border-width: 1px; gap: 4px; }
+.act span { font-size: 10.5px; }
+.week7 .dot { width: 30px; height: 30px; border-radius: 9px; border-width: 1px; }
+.tag { height: 28px; font-size: 11.5px; border-radius: 8px; }
+.subnav a { height: 32px; font-size: 12.5px; border-radius: 9px; border: 1px solid var(--line); }
+.subnav a[aria-current="page"] { border-color: var(--ink); }
+.sync { height: 30px; font-size: 11.5px; border-width: 1px; }
+.cell { height: 34px; }
+.daybtn { height: 38px; }
+.tl-track { height: 38px; }
+.tl-ev { width: 26px; height: 26px; top: 6px; border-radius: 8px; }
+.tl-ev svg { width: 15px; height: 15px; }
+.nav a { font-size: 10.5px; min-height: 50px; }
+.nav a svg { width: 21px; height: 21px; }
+@media (min-width: 900px) {
+  .shell { grid-template-columns: 216px minmax(0, 1fr); }
+  .nav a { font-size: 13.5px; min-height: 40px; }
+  .nav a svg { width: 19px; height: 19px; }
+  .nav .brand { font-size: 16px; }
+  .nav .brand span.logo { width: 32px; height: 32px; border-radius: 10px; }
+  .main { padding: 28px 32px 48px; }
+  /* kartlar boşluk bırakmadan akar */
+  .grid-cards { display: block; columns: 330px; column-gap: 14px; }
+  .grid-cards > * { break-inside: avoid; margin-bottom: 14px; display: flex; width: 100%; }
+}
+@media (min-width: 900px) {
+  .grid-cards.grid-areas { display: grid; columns: auto; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .grid-cards.grid-areas > * { margin-bottom: 0; }
+}
