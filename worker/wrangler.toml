@@ -9,3 +9,12 @@ preview_urls = false
 [vars]
 GOOGLE_CLIENT_ID = "967121735414-jnrc0ag77nk7prpobuc82pp4e8e291vn.apps.googleusercontent.com"
 ALLOWED_ORIGINS = "https://ecemyilmazz.github.io"
+
+# Aynı IP'den dakikada en fazla 30 istek
+[[ratelimits]]
+name = "LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60

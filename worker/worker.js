@@ -12,7 +12,10 @@
  *  GOOGLE_CLIENT_SECRET  (gizli)  : Google Cloud'daki client secret
  *  SESSION_KEY           (gizli)  : en az 32 karakterlik rastgele bir metin
  *  ALLOWED_ORIGINS       (metin)  : https://ecemyilmazz.github.io
+ *
+ * Güvenlik: oturumlar 90 gün sonra geçersiz olur; aynı IP'den dakikada en fazla 30 istek (LIMITER).
  */
+const SESSION_MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 export default {
   async fetch(req, env) {
     const origin = req.headers.get('Origin') || '';
@@ -29,6 +32,13 @@ export default {
     if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
     if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.SESSION_KEY) return json({ error: 'not_configured' }, 500);
 
+    // istek sınırı (wrangler.toml'daki LIMITER; yoksa atlanır)
+    if (env.LIMITER) {
+      const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
+      const { success } = await env.LIMITER.limit({ key: ip });
+      if (!success) return json({ error: 'rate_limited' }, 429);
+    }
+
     let body;
     try { body = await req.json(); } catch (e) { return json({ error: 'bad_json' }, 400); }
 
@@ -43,6 +53,7 @@ export default {
       if (url.pathname === '/refresh') {
         const s = await unseal(env, body.session);
         if (!s || !s.rt) return json({ error: 'bad_session' }, 401);
+        if (!s.iat || Date.now() - s.iat > SESSION_MAX_AGE_MS) return json({ error: 'session_expired' }, 401);
         const t = await googleToken({ refresh_token: s.rt, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET, grant_type: 'refresh_token' });
         if (t.error) return json({ error: t.error }, t.error === 'invalid_grant' ? 401 : 400);
         return json({ access_token: t.access_token, expires_in: t.expires_in, scope: t.scope });
