@@ -139,6 +139,7 @@ const GOAL_COLORS = ['blue', 'purple', 'amber', 'teal', 'pink', 'sky'];
 function defaultConfig() {
   return {
     v: 1, updatedAt: 0, waterGoal: 8,
+    profile: { sex: 'f', height: null, birth: '', activity: 1.375 },
     nutGoals: { p: 3, y: 2, c: 3, s: 0, u: 1 },
     sportGoal: { pilGoal: 2, pilMin: 40, weekMin: 150 },
     drinks: [
@@ -172,7 +173,7 @@ function defaultConfig() {
 function upgradeConfig(c) {
   const d = defaultConfig();
   const out = Object.assign({}, d, c || {});
-  ['nutGoals', 'sportGoal'].forEach((k) => { out[k] = Object.assign({}, d[k], (c || {})[k] || {}); });
+  ['nutGoals', 'sportGoal', 'profile'].forEach((k) => { out[k] = Object.assign({}, d[k], (c || {})[k] || {}); });
   ['drinks', 'supps', 'acts', 'moves', 'areas'].forEach((k) => { if (!Array.isArray(out[k])) out[k] = d[k]; });
   return out;
 }
@@ -406,6 +407,25 @@ function stats(k) {
     water: (d.water || []).length
   };
 }
+const ACTIVITY = [[1.2, 'Hareketsiz (masa başı)'], [1.375, 'Hafif aktif (haftada 1–3 gün spor)'], [1.55, 'Orta aktif (haftada 3–5 gün)'], [1.725, 'Çok aktif (haftada 6–7 gün)']];
+const fmtK = (n) => Math.round(n).toLocaleString('tr-TR');
+function latestWeight() { const ks = Object.keys(S.days).sort().reverse(); for (const k of ks) { const w = S.days[k].weight; if (w) return { w, k }; } return null; }
+function ageFrom(b) { if (!b) return null; const [y, m, d] = b.split('-').map(Number); const t = new Date(); let a = t.getFullYear() - y; if (t.getMonth() + 1 < m || (t.getMonth() + 1 === m && t.getDate() < d)) a--; return a; }
+function bmrInfo() {
+  const p = S.config.profile || {}; const lw = latestWeight(); const age = ageFrom(p.birth);
+  if (!lw || !p.height || age == null) return { ready: false, lw, age, p };
+  const v = 10 * lw.w + 6.25 * p.height - 5 * age + (p.sex === 'm' ? 5 : -161);
+  return { ready: true, bmr: v, tdee: v * (p.activity || 1.375), lw, age, p };
+}
+function profileFields(p, weightVal) {
+  return `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+    ${weightVal !== undefined ? `<label class="col label" style="gap:4px">Kilo (kg)<input class="field" type="number" inputmode="decimal" step="0.1" min="20" max="400" value="${esc(weightVal ?? '')}" data-change="weight"></label>` : ''}
+    <label class="col label" style="gap:4px">Boy (cm)<input class="field" type="number" inputmode="numeric" min="100" max="250" value="${esc(p.height || '')}" data-change="prof" data-field="height"></label>
+    <label class="col label" style="gap:4px">Doğum tarihi<input class="field" type="date" value="${esc(p.birth || '')}" data-change="prof" data-field="birth"></label>
+    <label class="col label" style="gap:4px">Cinsiyet<select class="field" data-change="prof" data-field="sex"><option value="f" ${p.sex !== 'm' ? 'selected' : ''}>Kadın</option><option value="m" ${p.sex === 'm' ? 'selected' : ''}>Erkek</option></select></label>
+  </div>
+  <label class="col label" style="gap:4px">Hareket düzeyi<select class="field" data-change="prof" data-field="activity">${ACTIVITY.map(([v, l]) => `<option value="${v}" ${Number(p.activity || 1.375) === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+}
 function weekKeys(key) { const d = dateObj(key); const dow = (d.getDay() + 6) % 7; const mon = addDays(key, -dow); return Array.from({ length: 7 }, (_, i) => addDays(mon, i)); }
 
 /* ================= görünüm parçaları ================= */
@@ -455,6 +475,7 @@ function viewHome() {
     ['pilates', '#C2410C', 'Pilates ' + pilWeek + '/' + c.sportGoal.pilGoal],
     ['heart', '#4B5563', 'Mod ' + mood]
   ];
+  const bi = bmrInfo(); if (bi.ready) chips.push(['flame', '#C2410C', 'Bazal ' + fmtK(bi.bmr) + ' kcal']);
   const health = `<a class="area" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>
     <div class="row" style="flex-wrap:wrap;gap:6px">${chips.map(([i, f, t]) => `<span class="tag"><span style="color:${f};display:flex">${ic(i, 16, 2)}</span>${esc(t)}</span>`).join('')}</div></a>`;
   const others = c.areas.map((a) => {
@@ -519,7 +540,7 @@ function goalForm(a) {
 function viewToday() {
   const k = todayKey();
   return `${healthTabs('today')}${topBar('Bugün', longDate(k))}
-    <div class="grid-cards">${cardSleep(k)}${cardWater(k)}${cardDrinks(k)}${cardSupps(k)}${cardMood(k)}${cardBalance(k)}${cardMeals(k)}</div>`;
+    <div class="grid-cards">${cardSleep(k)}${cardBody(k)}${cardWater(k)}${cardDrinks(k)}${cardSupps(k)}${cardMood(k)}${cardBalance(k)}${cardMeals(k)}</div>`;
 }
 function cardSleep(k) {
   const d = getDay(k); const prev = getDay(addDays(k, -1));
@@ -537,6 +558,24 @@ function cardSleep(k) {
       <label class="col sub" style="gap:4px">Bugün kalkış<input class="field time" type="time" value="${wake}" data-change="wake"></label>
       <label class="col sub" style="gap:4px">Bu gece yatış<input class="field time" type="time" value="${bedT}" data-change="bed"></label>
     </div></details></section>`;
+}
+function cardBody(k) {
+  const b = bmrInfo(); const p = b.p; const today = getDay(k).weight;
+  if (!b.ready) {
+    return `<section class="card" aria-label="Vücut"><div class="card-h"><h2>Vücut</h2><span class="hint">Bazal metabolizma için bilgilerini gir</span></div>
+      ${profileFields(p, today ?? (b.lw ? b.lw.w : ''))}
+      <p class="sub">Bilgiler girildikçe otomatik kaydedilir. Kilo her gün ayrı kaydedilir, böylece değişimi görebilirsin.</p></section>`;
+  }
+  const act = (ACTIVITY.find(([v]) => v === Number(p.activity || 1.375)) || ACTIVITY[1])[1];
+  const lwDate = dateObj(b.lw.k);
+  return `<section class="card" aria-label="Vücut"><div class="card-h"><h2>Vücut</h2><span class="hint">${b.age} yaş · ${p.height} cm</span></div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <div class="col" style="gap:2px;background:#FFF7ED;border-radius:12px;padding:10px 12px"><span class="sub" style="font-weight:600;color:#9A3412">Bazal metabolizma</span><span style="font-size:22px;font-weight:800;color:#9A3412">${fmtK(b.bmr)}<span style="font-size:12px;font-weight:600"> kcal/gün</span></span><span class="sub">Hiç hareket etmesen</span></div>
+      <div class="col" style="gap:2px;background:#F3F5F7;border-radius:12px;padding:10px 12px"><span class="sub" style="font-weight:600">Günlük toplam</span><span style="font-size:22px;font-weight:800">~${fmtK(b.tdee)}<span style="font-size:12px;font-weight:600"> kcal</span></span><span class="sub">${esc(act.split(' (')[0])}</span></div>
+    </div>
+    <div class="row" style="gap:8px"><label class="label" for="w-today" style="flex-shrink:0">Bugünkü kilo</label><input id="w-today" class="field" style="width:96px" type="number" inputmode="decimal" step="0.1" min="20" max="400" value="${esc(today ?? '')}" placeholder="${esc(b.lw.w)}" data-change="weight"><span class="sub grow">kg · son ölçüm ${esc(String(b.lw.w).replace('.', ','))} kg, ${lwDate.getDate()} ${TR_M3[lwDate.getMonth()]}</span></div>
+    <details data-keep="bodyFix" ${S.ui.open.bodyFix ? 'open' : ''}><summary>Bilgilerimi düzenle</summary><div class="col" style="gap:8px;margin-top:8px">${profileFields(p)}</div></details>
+    <p class="sub">Mifflin-St Jeor formülüyle tahmindir; gerçek değer ±%10 farklı olabilir. Kilo değiştikçe güncellenir.</p></section>`;
 }
 function cardWater(k) {
   const d = getDay(k); const goal = S.config.waterGoal; const n = d.water.length;
@@ -725,6 +764,7 @@ function viewInsights() {
     ${lane('Kahvaltı', 'egg', '#C2410C', (k, x) => (x && x.bk != null ? `<span style="color:${x.bk ? '#15803D' : '#9CA3AF'}">${ic(x.bk ? 'check' : 'minus', 16, 2.4)}</span>` : '<span style="color:#9CA3AF">·</span>'))}
     ${lane('Rafine şeker', 'cube', '#BE185D', (k, x) => (x && x.sugar ? `<span style="min-width:24px;height:24px;border-radius:8px;background:#FBCFE8;color:#9D174D;display:flex;align-items:center;justify-content:center">${x.sugar}</span>` : (x && x.sugar === 0 ? '<span style="color:#9CA3AF">0</span>' : '<span style="color:#9CA3AF">·</span>')))}
     ${lane('Kahve', 'turk', '#78350F', (k, x) => (x && x.coffee != null ? `<span style="min-width:24px;height:24px;border-radius:8px;background:${x.coffee >= 3 ? '#78350F' : '#F5EBDD'};color:${x.coffee >= 3 ? '#fff' : '#78350F'};display:flex;align-items:center;justify-content:center">${x.coffee}</span>` : '<span style="color:#9CA3AF">·</span>'))}
+    ${lane('Kilo', 'flame', '#9A3412', (k) => (S.days[k] && S.days[k].weight ? `<span style="color:#9A3412;font-size:11px">${String(S.days[k].weight).replace('.', ',')}</span>` : '<span style="color:#9CA3AF">·</span>'))}
     ${lane('Su', 'drop', '#1D4ED8', (k, x) => (x && x.water ? `<span style="color:#1D4ED8">${x.water}</span>` : '<span style="color:#9CA3AF">·</span>'))}
     ${lane('Spor (dk)', 'run', '#C2410C', (k, x) => (x && x.sportMin ? `<span style="color:#C2410C">${x.sportMin}</span>` : '<span style="color:#9CA3AF">·</span>'))}
   </div>`;
@@ -774,6 +814,7 @@ function viewSettings() {
     <section class="card"><div class="row">${S.user.picture ? `<img src="${esc(S.user.picture)}" alt="" width="44" height="44" style="border-radius:99px" referrerpolicy="no-referrer">` : icoBox('target', 'gray', 44)}<div class="col grow"><span class="name">${esc(S.user.name || 'Hesabım')}</span><span class="sub">${esc(S.user.email)}</span></div></div>
       <p class="sub" style="font-size:13px;line-height:1.5">Kayıtların önce bu cihazda saklanır, sonra Google Drive’ındaki gizli uygulama klasörüne kaydedilir. Telefon ve bilgisayarda aynı hesapla girdiğinde aynı verileri görürsün. Bu klasörü Drive’da dosya olarak görmezsin; Drive › Ayarlar › Uygulamaları yönet bölümünden silebilirsin.</p>
       <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-ghost btn-sm" data-act="syncNow">${ic('cloud', 16, 2)}Şimdi eşitle</button><button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 16, 2)}CSV indir</button><button type="button" class="btn btn-ghost btn-sm" data-act="signout" style="color:#991B1B">${ic('logout', 16, 2)}Çıkış yap</button></div></section>
+    <section class="card"><div class="card-h"><h2 style="font-size:17px;font-weight:700">Vücut bilgilerim</h2><span class="hint">${bmrInfo().ready ? 'Bazal ' + fmtK(bmrInfo().bmr) + ' kcal/gün' : 'Bazal metabolizma için'}</span></div>${profileFields(c.profile || {})}<p class="sub">Kiloyu Bugün ekranındaki Vücut kartından gir.</p></section>
     <section class="card"><h2 style="font-size:17px;font-weight:700">Hedefler</h2>
       ${num('Günlük su (bardak)', 'waterGoal', 1, 30)}${num('Haftalık pilates (seans)', 'sportGoal.pilGoal', 0, 14)}${num('Pilates süresi (dk)', 'sportGoal.pilMin', 5, 180)}${num('Haftalık toplam spor (dk)', 'sportGoal.weekMin', 0, 2000)}
       ${NUTS.map((n) => num(n.name + (n.limit ? ' (en fazla, öğün)' : ' (öğün)'), 'nutGoals.' + n.k, 0, 4)).join('')}</section>
@@ -784,7 +825,14 @@ function viewSettings() {
 
 /* ================= çizim ================= */
 const $app = document.getElementById('app');
+let rendering = false;
 function render() {
+  // DOM değişirken odaktaki alan blur/change tetiklerse iç içe çizimi ertele
+  if (rendering) { setTimeout(render, 0); return; }
+  rendering = true;
+  try { renderNow(); } finally { rendering = false; }
+}
+function renderNow() {
   if (!S.user) { $app.innerHTML = viewLogin(); return; }
   const r = S.route; let body;
   if (r === 'today') body = viewToday();
@@ -899,6 +947,8 @@ const CHG = {
   mealTime: (v, ds) => mutDay(T(), (d) => { const r = d.meals[ds.meal] || (d.meals[ds.meal] = {}); r.time = v; }),
   sportStartT: (v) => saveSport({ start: v }),
   sportEndT: (v) => saveSport({ end: v }),
+  weight: (v) => { const n = parseFloat(String(v).replace(',', '.')); mutDay(T(), (d) => { if (n >= 20 && n <= 400) d.weight = Math.round(n * 10) / 10; else delete d.weight; }); },
+  prof: (v, ds) => mutCfg((c) => { c.profile = c.profile || {}; const f = ds.field; c.profile[f] = f === 'height' ? (parseInt(v, 10) || null) : f === 'activity' ? parseFloat(v) : v; }),
   cfgNum: (v, ds) => { const n = parseInt(v, 10); if (isNaN(n)) return; mutCfg((c) => { const parts = ds.path.split('.'); let o = c; for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]]; o[parts[parts.length - 1]] = Math.max(0, n); }); }
 };
 
@@ -925,7 +975,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 /* ================= CSV ================= */
 function exportCsv() {
   const c = S.config; const keys = Object.keys(S.days).sort();
-  const head = ['tarih', 'mod_1_5', 'uyku_saat', 'yatis_onceki_gece', 'kalkis', 'su_bardak', 'su_saatleri', 'icecekler', 'kahve_sayisi', 'takviyeler', 'kahvalti', 'ogle', 'aksam', 'ara_ogun', 'spor_dk', 'spor_detay', 'tekrarlar', 'notlar'];
+  const head = ['tarih', 'mod_1_5', 'uyku_saat', 'yatis_onceki_gece', 'kalkis', 'su_bardak', 'su_saatleri', 'icecekler', 'kahve_sayisi', 'takviyeler', 'kahvalti', 'ogle', 'aksam', 'ara_ogun', 'spor_dk', 'spor_detay', 'tekrarlar', 'notlar', 'kilo'];
   const cell = (v) => { const s = v == null ? '' : String(v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const mealStr = (r) => { if (!r) return ''; if (r.skip) return 'yemedim'; const m = NUTS.filter((n) => (r.marks || {})[n.k]).map((n) => n.short); return [r.time || '', m.join('+')].filter(Boolean).join(' '); };
   const rows = keys.map((k) => {
@@ -936,7 +986,7 @@ function exportCsv() {
       mealStr(d.meals.k), mealStr(d.meals.o), mealStr(d.meals.a), mealStr(d.meals.x),
       s.sportMin || 0, d.sport.map((l) => (l.name || l.act) + ' ' + (l.start || '') + '-' + (l.end || '') + ' ' + l.min + 'dk ' + INTENS[l.intensity ?? 1]).join(' | '),
       d.reps.map((r) => ((c.moves.find((x) => x.id === r.id) || {}).name || r.id) + ' ' + r.n + ' ' + r.t).join(' | '),
-      d.notes.map((n) => n.t + ' ' + (n.mood != null ? MOODS[n.mood].label : '') + ' ' + (n.tags || []).join('/') + ' ' + (n.text || '')).join(' | ')].map(cell).join(',');
+      d.notes.map((n) => n.t + ' ' + (n.mood != null ? MOODS[n.mood].label : '') + ' ' + (n.tags || []).join('/') + ' ' + (n.text || '')).join(' | '), d.weight != null ? String(d.weight).replace('.', ',') : ''].map(cell).join(',');
   });
   const blob = new Blob(['﻿' + head.join(',') + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'hedeflerim-' + todayKey() + '.csv'; document.body.appendChild(a); a.click(); a.remove();
