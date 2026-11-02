@@ -4,5 +4,5 @@
 window.HEDEF_CONFIG = {
   googleClientId: '967121735414-jnrc0ag77nk7prpobuc82pp4e8e291vn.apps.googleusercontent.com',
   // Cloudflare Worker adresi (örn. 'https://hedeflerim-auth.KULLANICI.workers.dev'). Boşsa oturum saatte bir Google penceresiyle yenilenir.
-  authServer: ''
+  authServer: 'https://hedeflerim-auth.ecemylmz7.workers.dev'
 };

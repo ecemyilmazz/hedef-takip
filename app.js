@@ -316,7 +316,7 @@ function initGis() {
 }
 
 /* ---------- kalıcı oturum (sunucu ile) ---------- */
-let codeClient = null, refreshing = null;
+let codeClient = null, refreshing = null, authServerDown = false;
 const SESS_KEY = 'ht:session';
 const getSession = () => { try { return localStorage.getItem(SESS_KEY) || ''; } catch (e) { return ''; } };
 const setSession = (v) => { try { if (v) localStorage.setItem(SESS_KEY, v); else localStorage.removeItem(SESS_KEY); } catch (e) { /* yok say */ } };
@@ -349,11 +349,11 @@ async function onCode(resp) {
     if (t.session) setSession(t.session);
     else toast('Kalıcı oturum için Google bir kez daha izin istemeli. Ayarlar › “Kalıcı oturumu yenile”ye bas.');
     await onToken({ access_token: t.access_token, expires_in: t.expires_in, scope: t.scope || '' });
-  } catch (e) { console.warn(e); toast('Giriş tamamlanamadı, tekrar dene.'); setSync('needsAuth'); }
+  } catch (e) { console.warn(e); if (!e.status) { authServerDown = true; toast('Oturum sunucusuna ulaşılamadı; normal girişle devam ediliyor. Tekrar dokun.'); } else toast('Giriş tamamlanamadı, tekrar dene.'); setSync('needsAuth'); }
 }
 async function requestToken(forcePopup) {
   if (!forcePopup && getSession()) { lastAuthTry = Date.now(); if (await refreshSilently()) { afterSilentLogin(); return; } }
-  if (AUTH_SERVER && codeClient) { lastAuthTry = Date.now(); codeClient.requestCode(); return; }
+  if (AUTH_SERVER && codeClient && !authServerDown) { lastAuthTry = Date.now(); codeClient.requestCode(); return; }
   if (!tokenClient) { toast('Google bağlantısı henüz yüklenmedi, birkaç saniye sonra tekrar dene.'); return; }
   lastAuthTry = Date.now();
   const opts = { prompt: '' };
