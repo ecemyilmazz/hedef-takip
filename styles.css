@@ -357,3 +357,10 @@ body { font-size: 14px; }
 .todo.done .col > span:first-child { text-decoration: line-through; }
 .tcheck { width: 24px; height: 24px; border-radius: 7px; border: 1.5px solid #D1D5DB; background: #fff; display: flex; align-items: center; justify-content: center; padding: 0; color: #fff; flex-shrink: 0; }
 .tcheck[aria-pressed="true"] { background: #BE185D; border-color: #BE185D; }
+/* emoji ikonlar */
+.emo { display: inline-flex; align-items: center; justify-content: center; line-height: 1; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; flex-shrink: 0; }
+.nut[aria-pressed="false"] .emo, .face[aria-pressed="false"] .emo { filter: grayscale(1); opacity: .45; }
+.act[aria-pressed="false"] .emo, .mcat[aria-pressed="false"] .emo { opacity: .85; }
+.nav a .emo { width: 22px; }
+.nav a:not([aria-current="page"]) .emo { filter: grayscale(.35); opacity: .8; }
+.face .emo { font-size: 26px !important; }

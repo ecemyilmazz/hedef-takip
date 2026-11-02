@@ -108,7 +108,16 @@ const P = {
   scissors: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.1 7.9L20 20M8.1 16.1L20 4',
   hand: 'M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5v-7a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7h-.5a6 6 0 0 1-4.6-2.2L3 15.5a1.6 1.6 0 0 1 2.4-2.1L8 16'
 };
+const EMOJI = {
+  drop: '💧', egg: '🍳', avocado: '🥑', wheat: '🌾', cube: '🍬', bread: '🥐', turk: '☕', filtre: '🫘', cay: '🫖', cicek: '🌼', bardak: '🥤',
+  kapsul: '💊', sun: '🌞', leaf: '🌿', fish: '🐟', moon: '🌙', heart: '💗', flame: '🔥', star: '⭐', brief: '💼', coin: '💰', target: '🎯',
+  plate: '🍽️', walk: '🚶‍♀️', run: '🏃‍♀️', pilates: '🤸‍♀️', yoga: '🧘‍♀️', gym: '🏋️‍♀️', bike: '🚴‍♀️', swim: '🏊‍♀️', mekik: '🔥', sinav: '💪', squat: '🍑', timer: '⏱️',
+  dot: '✨', book: '📚', lang: '🗣️', code: '💻', music: '🎵', pencil: '📝', piggy: '🐷', cart: '🛒', car: '🚗', shirt: '👗', wallet: '👛', repeat: '📳',
+  sparkle: '✨', zap: '⚡', scissors: '✂️', hand: '💅', home: '☀️', grid: '🌸', chart: '📊', sliders: '⚙️'
+};
 function ic(name, size = 22, sw = 1.8, extra = '') {
+  const em = EMOJI[name] || EMOJI_BY_PATH[name] || (!P[name] && typeof name === 'string' && name.length <= 8 && !/^[Mm][\d. ]/.test(name) ? name : null);
+  if (em) return `<span class="emo" style="font-size:${Math.round(size * 1.02)}px" aria-hidden="true">${em}</span>`;
   const d = P[name] || name;
   if (/fill="currentColor"/.test(extra)) return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="${d}"/></svg>`;
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}><path d="${d}"/></svg>`;
@@ -128,6 +137,16 @@ const COLORS = {
   green: ['#15803D', '#DCFCE7'], cyan: ['#0E7490', '#CFFAFE'], teal: ['#0F766E', '#CCFBF1'], indigo: ['#3730A3', '#EEF2FF'], gray: ['#4B5563', '#F3F4F6']
 };
 const col = (name) => COLORS[name] || COLORS.gray;
+const MOOD_EMOJI = ['😣', '😕', '😐', '🙂', '😄'];
+const EMOJI_BY_PATH = {}; MOODS.forEach((m, i) => { EMOJI_BY_PATH[m.d] = MOOD_EMOJI[i]; });
+// bakım maddeleri için ada göre emoji
+function careEmoji(it) {
+  const n = (it.name || '').toLocaleLowerCase('tr');
+  if (n.includes('saç mask')) return '💆‍♀️'; if (n.includes('yüz mask')) return '🧖‍♀️'; if (n.includes('manikür')) return '💅'; if (n.includes('pedikür')) return '🦶';
+  if (n.includes('titreşim') || n.includes('platform')) return '📳'; if (n.includes('koltuk')) return '🌸'; if (n === 'kol' || n.includes('kol ')) return '💪';
+  if (n.includes('yüz')) return '🌷'; if (n.includes('bacak')) return '🦵'; if (n.includes('saç')) return '💇‍♀️';
+  return it.group === 'Lazer' ? '⚡' : '✨';
+}
 
 /* ================= sabit tanımlar ================= */
 const NUTS = [
@@ -544,7 +563,7 @@ function viewHomeDesktop() {
       mini('flame', 'orange', 'Bazal', bi.ready ? fmtK(bi.bmr) + ' kcal' : '—', bi.ready ? '~' + fmtK(bi.tdee) + ' toplam' : '')
     ].join('')}</div></a>`;
   const areas = c.areas.map((a) => {
-    if (a.id === 'bakim') { const cw = S.config.care.weekly || []; const cdone = cw.filter((it) => careWeek(it, k).done >= (it.perWeek || 1)).length; const copen = (S.config.care.todos || []).filter((t) => !t.done).length; const list = cw.slice(0, 6).map((it) => { const w = careWeek(it, k); const ok = w.done >= (it.perWeek || 1); return `<div class="row" style="gap:8px;min-height:28px"><span class="chip-ic" style="width:24px;height:24px;border-radius:7px;background:#FCE7F3;color:#BE185D">${ic(it.icon || 'sparkle', 13, 2)}</span><span class="grow" style="font-size:13px;font-weight:600">${esc(it.name)}</span><span style="font-size:12px;font-weight:700;color:${ok ? '#15803D' : '#B45309'}">${ok ? '✓ ' : ''}${w.done}/${it.perWeek || 1}</span></div>`; }).join(''); return `<a class="area" href="#area:bakim"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Bu hafta ${cdone}/${cw.length} tamam · ${copen} yapılacak</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>${list ? `<div class="col" style="gap:2px">${list}</div>` : `<div class="area-empty"><span>${esc(a.examples || '')}</span><b style="color:#BE185D">+ Ekle</b></div>`}</a>`; }
+    if (a.id === 'bakim') { const cw = S.config.care.weekly || []; const cdone = cw.filter((it) => careWeek(it, k).done >= (it.perWeek || 1)).length; const copen = (S.config.care.todos || []).filter((t) => !t.done).length; const list = cw.slice(0, 6).map((it) => { const w = careWeek(it, k); const ok = w.done >= (it.perWeek || 1); return `<div class="row" style="gap:8px;min-height:28px"><span class="chip-ic" style="width:24px;height:24px;border-radius:7px;background:#FCE7F3;color:#BE185D">${ic(careEmoji(it), 13, 2)}</span><span class="grow" style="font-size:13px;font-weight:600">${esc(it.name)}</span><span style="font-size:12px;font-weight:700;color:${ok ? '#15803D' : '#B45309'}">${ok ? '✓ ' : ''}${w.done}/${it.perWeek || 1}</span></div>`; }).join(''); return `<a class="area" href="#area:bakim"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Bu hafta ${cdone}/${cw.length} tamam · ${copen} yapılacak</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>${list ? `<div class="col" style="gap:2px">${list}</div>` : `<div class="area-empty"><span>${esc(a.examples || '')}</span><b style="color:#BE185D">+ Ekle</b></div>`}</a>`; }
     if (a.id === 'maddi') { const ms = moneySummary(k); return `<a class="area" href="#area:maddi"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Harcama · Bütçe · Birikim</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div><div class="minis" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="mini"><div class="col"><span class="mini-l">Bugün</span><span class="mini-v">${fmtTL(daySpend(d))}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Bu ay</span><span class="mini-v">${fmtTL(ms.spent)}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Kalan</span><span class="mini-v" style="color:${ms.left < 0 ? '#B91C1C' : '#111827'}">${ms.income ? fmtTL(ms.left) : '—'}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Birikim (bu ay)</span><span class="mini-v">${fmtTL(ms.savedMonth)}</span></div></div></div></a>`; }
     const gs = a.goals || []; const [fg] = col(a.color); const done = gs.filter((g) => goalDone(g, d)).length;
     const list = gs.slice(0, 5).map((g) => { const v = goalVal(g, d); const ok = goalDone(g, d); const [gf, gb] = col(g.color || a.color);
@@ -563,7 +582,7 @@ function viewHomeDesktop() {
     { label: 'Pilates', icon: 'pilates', color: 'orange', f: (x) => { const dd = getDay(x); const did = (dd.sport || []).some((e) => e.act === 'pilates'); if (did) return true; return (sg.pilDays || []).includes(dateObj(x).getDay()) && x < k ? false : null; } },
     { label: 'Rafine şeker yok', icon: 'cube', color: 'pink', f: (x) => { const dd = S.days[x]; if (!dd) return null; const ev = eats(dd); if (!ev.some((e) => e.time || Object.values(e.marks).some(Boolean))) return null; return !ev.some((e) => !e.skip && e.marks.s); } }
   ].concat(c.areas.flatMap((a) => (a.goals || []).map((g) => ({ label: g.name, icon: g.icon, color: g.color || a.color, f: (x) => (S.days[x] ? goalDone(g, getDay(x)) : null) }))))
-   .concat((c.care.weekly || []).map((it) => ({ label: it.name, icon: it.icon || 'sparkle', color: 'pink', f: (x) => ((getDay(x).care || []).some((l) => l.item === it.id) ? true : null) })));
+   .concat((c.care.weekly || []).map((it) => ({ label: it.name, icon: careEmoji(it), color: 'pink', f: (x) => ((getDay(x).care || []).some((l) => l.item === it.id) ? true : null) })));
   const streak = `<section class="card" aria-label="Son 7 gün"><div class="card-h"><h2>Son 7 gün</h2><span class="hint">dolu = tuttu · boş = tutmadı · nokta = kayıt yok</span></div>
     <div class="streak"><span></span>${days7.map((x) => { const dt = dateObj(x); return `<span class="st-h ${x === k ? 'today' : ''}">${TR_D3[dt.getDay()]}<b>${dt.getDate()}</b></span>`; }).join('')}
     ${rows.map((r) => { const [fg, bg] = col(r.color); return `<span class="st-l"><span style="color:${fg};display:flex">${ic(r.icon, 15, 2)}</span><span>${esc(r.label)}</span></span>${days7.map((x) => { const v = r.f(x); return `<span class="st-c" title="${esc(r.label)} · ${esc(longDate(x))}: ${v == null ? 'kayıt yok' : v ? 'tuttu' : 'tutmadı'}">${v == null ? '<i></i>' : `<em style="${v ? `background:${fg};border-color:${fg}` : `border-color:${bg === '#F3F4F6' ? '#D1D5DB' : fg};opacity:.45`}"></em>`}</span>`; }).join('')}`; }).join('')}</div></section>`;
@@ -713,12 +732,12 @@ function viewCare() {
   const item = (it) => {
     const w = careWeek(it, k); const per = it.perWeek || 1; const ok = w.done >= per; const doneToday = (getDay(k).care || []).some((l) => l.item === it.id);
     const dots = w.wk.map((x, i) => { const n = w.logs.filter((l) => l.day === x).length; return `<span class="cdot ${n ? 'on' : ''} ${x === k ? 'today' : ''}" title="${TR_D3[(i + 1) % 7]}${n ? ': yapıldı' : ''}">${TR_D3[(i + 1) % 7].slice(0, 2)}</span>`; }).join('');
-    return `<div class="care-row"><div class="row" style="gap:10px">${icoBox(it.icon || 'sparkle', it.color || 'pink', 34, 18)}<div class="col grow"><span class="name">${esc(it.name)}</span><span class="sub">${ago(careLast(it, k))} · hedef haftada ${per}</span></div>
-      <span class="care-st" style="color:${ok ? '#15803D' : '#B45309'}">${ok ? ic('check', 14, 2.6) : ''}${w.done}/${per}</span></div>
+    return `<div class="care-row"><div class="row" style="gap:10px">${icoBox(careEmoji(it), it.color || 'pink', 34, 18)}<div class="col grow"><span class="name">${esc(it.name)}</span><span class="sub">${ago(careLast(it, k))} · hedef haftada ${per}</span></div>
+      <span class="care-st" style="color:${ok ? '#15803D' : '#B45309'}">${ok ? ic('check', 14, 2.6) : ''}${w.done}/${per}</span><button type="button" class="btn-icon" style="border:0;color:#9CA3AF;width:28px;height:28px" data-act="careItemDel" data-id="${esc(it.id)}" aria-label="${esc(it.name)} sil">${ic('x', 13, 2)}</button></div>
       <div class="row" style="gap:8px;flex-wrap:wrap"><div class="cdots">${dots}</div><span class="grow"></span>
       ${doneToday ? `<button type="button" class="btn btn-ghost btn-sm" data-act="careUndo" data-id="${esc(it.id)}">Geri al</button>` : ''}
       <button type="button" class="btn btn-sm" style="background:#BE185D;color:#fff" data-act="careDo" data-id="${esc(it.id)}">${ic('check', 14, 2.6)}Yaptım</button>
-      <button type="button" class="btn-icon" style="border:0;color:#9CA3AF;width:32px;height:32px" data-act="careItemDel" data-id="${esc(it.id)}" aria-label="${esc(it.name)} sil">${ic('x', 14, 2)}</button></div></div>`;
+</div></div>`;
   };
   const weeklySecs = Object.keys(groups).map((g) => { const its = groups[g]; const done = its.filter((it) => careWeek(it, k).done >= (it.perWeek || 1)).length;
     return `<section class="card" aria-label="${esc(g)}"><div class="card-h"><h2>${esc(g)}</h2><span class="hint">bu hafta ${done}/${its.length} tamam</span></div>${its.map(item).join('')}</section>`; }).join('');
