@@ -8,6 +8,7 @@
  */
 
 const CLIENT_ID = (window.HEDEF_CONFIG || {}).googleClientId || '';
+const AUTH_SERVER = String((window.HEDEF_CONFIG || {}).authServer || '').replace(/\/+$/, '');
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const SCOPES = 'openid email profile ' + DRIVE_SCOPE;
 const DAY_START_HOUR = 4; // gece 04:00'e kadar yapılan kayıtlar bir önceki güne yazılır
@@ -305,15 +306,61 @@ function initGis() {
     client_id: CLIENT_ID, scope: SCOPES, callback: onToken,
     error_callback: () => { setSync(S.dirty.size ? 'needsAuth' : 'idle'); }
   });
+  if (AUTH_SERVER) {
+    codeClient = google.accounts.oauth2.initCodeClient({
+      client_id: CLIENT_ID, scope: SCOPES, ux_mode: 'popup', callback: onCode,
+      error_callback: () => { setSync(S.dirty.size ? 'needsAuth' : 'idle'); }
+    });
+  }
   render();
 }
-function requestToken() {
+
+/* ---------- kalıcı oturum (sunucu ile) ---------- */
+let codeClient = null, refreshing = null;
+const SESS_KEY = 'ht:session';
+const getSession = () => { try { return localStorage.getItem(SESS_KEY) || ''; } catch (e) { return ''; } };
+const setSession = (v) => { try { if (v) localStorage.setItem(SESS_KEY, v); else localStorage.removeItem(SESS_KEY); } catch (e) { /* yok say */ } };
+async function authPost(path, body) {
+  const r = await fetch(AUTH_SERVER + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || 'http ' + r.status); e.status = r.status; throw e; }
+  return j;
+}
+// Google penceresi açmadan yeni erişim anahtarı al
+async function refreshSilently() {
+  if (!AUTH_SERVER || !getSession()) return false;
+  if (refreshing) return refreshing;
+  refreshing = (async () => {
+    try {
+      const t = await authPost('/refresh', { session: getSession() });
+      S.token = t.access_token; S.tokenExp = Date.now() + (Number(t.expires_in || 3600) - 120) * 1000;
+      return true;
+    } catch (e) {
+      if (e.status === 401) setSession(''); // anahtar geçersiz: bir sonraki dokunuşta Google penceresi açılır
+      return false;
+    } finally { refreshing = null; }
+  })();
+  return refreshing;
+}
+async function onCode(resp) {
+  if (!resp || resp.error || !resp.code) { setSync('needsAuth'); return; }
+  try {
+    const t = await authPost('/exchange', { code: resp.code });
+    if (t.session) setSession(t.session);
+    else toast('Kalıcı oturum için Google bir kez daha izin istemeli. Ayarlar › “Kalıcı oturumu yenile”ye bas.');
+    await onToken({ access_token: t.access_token, expires_in: t.expires_in, scope: t.scope || '' });
+  } catch (e) { console.warn(e); toast('Giriş tamamlanamadı, tekrar dene.'); setSync('needsAuth'); }
+}
+async function requestToken(forcePopup) {
+  if (!forcePopup && getSession()) { lastAuthTry = Date.now(); if (await refreshSilently()) { afterSilentLogin(); return; } }
+  if (AUTH_SERVER && codeClient) { lastAuthTry = Date.now(); codeClient.requestCode(); return; }
   if (!tokenClient) { toast('Google bağlantısı henüz yüklenmedi, birkaç saniye sonra tekrar dene.'); return; }
   lastAuthTry = Date.now();
   const opts = { prompt: '' };
   if (S.user && S.user.email) opts.login_hint = S.user.email;
   tokenClient.requestAccessToken(opts);
 }
+function afterSilentLogin() { setSync('loading'); render(); loadRemote().then(() => applySetupLink()); }
 async function onToken(resp) {
   if (!resp || resp.error) { setSync('needsAuth'); return; }
   if (!google.accounts.oauth2.hasGrantedAllScopes(resp, DRIVE_SCOPE)) {
@@ -335,6 +382,7 @@ async function onToken(resp) {
 function signOut() {
   if (!confirm('Çıkış yapılsın mı? Eşitlenmemiş kayıt varsa önce eşitlenir.')) return;
   const finish = () => {
+    const sess = getSession(); if (sess && AUTH_SERVER) authPost('/revoke', { session: sess }).catch(() => {}); setSession('');
     try { if (S.token && window.google) google.accounts.oauth2.revoke(S.token, () => {}); } catch (e) { /* yok say */ }
     try { localStorage.removeItem(lsKey()); localStorage.removeItem('ht:sport:' + S.user.email); localStorage.removeItem('ht:lastUser'); } catch (e) { /* yok say */ }
     S.user = null; S.token = null; S.tokenExp = 0; S.loadedRemote = false; location.hash = ''; render();
@@ -344,7 +392,9 @@ function signOut() {
 
 /* ================= Drive ================= */
 async function api(url, opts = {}) {
-  const r = await fetch(url, Object.assign({}, opts, { headers: Object.assign({}, opts.headers || {}, { Authorization: 'Bearer ' + S.token }) }));
+  if (!tokenOk() && getSession()) await refreshSilently();
+  let r = await fetch(url, Object.assign({}, opts, { headers: Object.assign({}, opts.headers || {}, { Authorization: 'Bearer ' + S.token }) }));
+  if (r.status === 401 && getSession() && await refreshSilently()) r = await fetch(url, Object.assign({}, opts, { headers: Object.assign({}, opts.headers || {}, { Authorization: 'Bearer ' + S.token }) }));
   if (r.status === 401) { S.token = null; throw new Error('auth'); }
   if (!r.ok) throw new Error('http ' + r.status);
   return r;
@@ -434,7 +484,7 @@ let syncing = false;
 async function sync() {
   if (syncing || !S.user) return;
   if (!S.dirty.size) { setSync(tokenOk() ? 'ok' : 'idle'); return; }
-  if (!tokenOk()) { setSync('needsAuth'); return; }
+  if (!tokenOk() && !(await refreshSilently())) { setSync('needsAuth'); return; }
   if (!navigator.onLine) { setSync('offline'); return; }
   syncing = true; setSync('saving');
   try {
@@ -1244,6 +1294,7 @@ function viewSettings() {
   <div class="grid-cards">
     <section class="card"><div class="row">${S.user.picture ? `<img src="${esc(S.user.picture)}" alt="" width="44" height="44" style="border-radius:99px" referrerpolicy="no-referrer">` : icoBox('target', 'gray', 44)}<div class="col grow"><span class="name">${esc(S.user.name || 'Hesabım')}</span><span class="sub">${esc(S.user.email)}</span></div></div>
       <p class="sub" style="font-size:13px;line-height:1.5">Kayıtların önce bu cihazda saklanır, sonra Google Drive’ındaki gizli uygulama klasörüne kaydedilir. Telefon ve bilgisayarda aynı hesapla girdiğinde aynı verileri görürsün. Bu klasörü Drive’da dosya olarak görmezsin; Drive › Ayarlar › Uygulamaları yönet bölümünden silebilirsin.</p>
+      ${AUTH_SERVER ? `<p class="sub" style="font-size:13px">${getSession() ? '🔒 Kalıcı oturum açık: Google penceresi açılmadan eşitlenir.' : '⚠️ Kalıcı oturum yok: oturum saatte bir yenilenir.'} <button type="button" class="btn-link" style="min-height:0;font-size:13px" data-act="renewSession">Kalıcı oturumu yenile</button></p>` : ''}
       <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-ghost btn-sm" data-act="syncNow">${ic('cloud', 16, 2)}Şimdi eşitle</button><button type="button" class="btn btn-ghost btn-sm" data-act="csv">${ic('download', 16, 2)}CSV indir</button><button type="button" class="btn btn-ghost btn-sm" data-act="signout" style="color:#991B1B">${ic('logout', 16, 2)}Çıkış yap</button></div></section>
     <section class="card"><div class="card-h"><h2 style="font-size:17px;font-weight:700">Vücut bilgilerim</h2><span class="hint">${bmrInfo().ready ? 'Bazal ' + fmtK(bmrInfo().bmr) + ' kcal/gün' : 'Bazal metabolizma için'}</span></div>${profileFields(c.profile || {})}<p class="sub">Kiloyu Bugün ekranındaki Vücut kartından gir.</p></section>
     <section class="card"><h2 style="font-size:17px;font-weight:700">Hedefler</h2>
@@ -1297,6 +1348,7 @@ const clearDraft = (k) => { S.ui.drafts[k] = ''; };
 const ACT = {
   signin: () => requestToken(),
   reauth: () => { if (tokenOk()) { sync(); loadRemote(); } else requestToken(); },
+  renewSession: () => { setSession(''); try { if (S.token) google.accounts.oauth2.revoke(S.token, () => requestToken(true)); else requestToken(true); } catch (e) { requestToken(true); } },
   syncNow: () => { if (tokenOk()) loadRemote(); else requestToken(); },
   signout: () => signOut(),
   csv: () => exportCsv(),
@@ -1428,7 +1480,7 @@ document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
   const a = el ? el.dataset.act : '';
   // bir saatlik oturum dolduysa, ilk dokunuşta sessizce yenile
-  if (S.user && !tokenOk() && tokenClient && a !== 'signin' && a !== 'reauth' && a !== 'signout' && Date.now() - lastAuthTry > 60000 && (S.dirty.size || !S.loadedRemote)) requestToken();
+  if (S.user && !tokenOk() && (tokenClient || getSession()) && a !== 'signin' && a !== 'reauth' && a !== 'signout' && Date.now() - lastAuthTry > 60000 && (S.dirty.size || !S.loadedRemote)) requestToken();
   if (!el || el.tagName === 'INPUT') { if (el && ACT[a]) ACT[a](el.dataset, el); return; }
   const fn = ACT[a]; if (fn) { e.preventDefault(); fn(el.dataset, el); }
 });
@@ -1461,7 +1513,7 @@ function applySetupLink() {
 }
 window.addEventListener('hashchange', () => { if (applySetupLink()) return; S.route = location.hash.slice(1) || 'home'; render(); window.scrollTo(0, 0); });
 window.addEventListener('online', () => sync());
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) { if (tokenOk()) loadRemote(); else render(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) { if (tokenOk()) loadRemote(); else if (getSession()) refreshSilently().then((ok) => { if (ok) loadRemote(); else render(); }); else render(); } });
 
 /* ================= CSV ================= */
 function exportCsv() {
@@ -1490,6 +1542,7 @@ function exportCsv() {
   render();
   if (S.user) applySetupLink();
   initGis();
+  if (S.user && getSession()) refreshSilently().then((ok) => { if (ok) afterSilentLogin(); else setSync('needsAuth'); });
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
-  setInterval(() => { if (S.user && S.dirty.size && tokenOk()) sync(); }, 60000);
+  setInterval(() => { if (!S.user) return; if (getSession() && S.tokenExp - Date.now() < 5 * 60000) refreshSilently(); if (S.dirty.size && tokenOk()) sync(); }, 60000);
 })();
