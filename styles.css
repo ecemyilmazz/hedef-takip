@@ -33,7 +33,7 @@ svg { flex-shrink: 0; }
 .grid-cards { display: flex; flex-direction: column; gap: 16px; }
 .shell { min-height: 100vh; min-height: 100dvh; }
 .main {
-  max-width: 1180px; margin: 0 auto;
+  width: 100%; max-width: 1180px; margin: 0 auto;
   padding: calc(16px + env(safe-area-inset-top)) 16px calc(110px + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; gap: 16px;
 }
