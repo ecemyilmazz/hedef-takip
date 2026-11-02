@@ -382,9 +382,27 @@ function mergeDay(local, remote) {
   out.updatedAt = Date.now();
   return out;
 }
+function mergeById(a, b) { // b (yerel) aynı id'de kazanır, iki taraftaki öğeler korunur
+  if (!Array.isArray(a)) return b; if (!Array.isArray(b)) return a;
+  const out = a.slice(); b.forEach((x) => { const i = x && x.id != null ? out.findIndex((y) => y && y.id === x.id) : -1; if (i >= 0) out[i] = x; else if (!out.some((y) => JSON.stringify(y) === JSON.stringify(x))) out.push(x); });
+  return out;
+}
+function mergeConfig(remote, local) {
+  const out = Object.assign({}, remote, local);
+  ['drinks', 'supps', 'acts', 'moves', 'areas'].forEach((k) => { out[k] = mergeById(remote[k], local[k]); });
+  (out.areas || []).forEach((a) => { const ra = (remote.areas || []).find((x) => x.id === a.id); if (ra) a.goals = mergeById(ra.goals || [], a.goals || []); });
+  out.care = Object.assign({}, remote.care || {}, local.care || {}, { weekly: mergeById((remote.care || {}).weekly || [], (local.care || {}).weekly || []), todos: mergeById((remote.care || {}).todos || [], (local.care || {}).todos || []) });
+  const rm = remote.money || {}, lm = local.money || {};
+  out.money = Object.assign({}, rm, lm); ['categories', 'recurring', 'savings', 'savingsLog'].forEach((k) => { out.money[k] = mergeById(rm[k] || [], lm[k] || []); });
+  out.profile = Object.assign({}, remote.profile || {}, local.profile || {});
+  out.updatedAt = Date.now();
+  return out;
+}
 function applyRemote(name, remote) {
   if (name === 'config.json') {
-    if (!S.dirty.has(name) || (remote.updatedAt || 0) > (S.config.updatedAt || 0)) { S.config = upgradeConfig(remote); S.dirty.delete(name); }
+    if (!S.dirty.has(name)) { S.config = upgradeConfig(remote); return; }
+    // iki cihazda da değişmiş: üzerine yazma, birleştir ve tekrar kaydet
+    S.config = upgradeConfig(mergeConfig(upgradeConfig(remote), S.config)); S.dirty.add(name);
     return;
   }
   const k = name.slice(4, 14);
@@ -1259,7 +1277,8 @@ function renderNow() {
   // odaktaki alanı ve kaydırmayı koru
   const ae = document.activeElement; const focusDraft = ae && ae.dataset ? ae.dataset.draft : null;
   const sx = window.scrollX, sy = window.scrollY;
-  $app.innerHTML = `<div class="shell">${navBar()}<main class="main" id="main">${body}</main></div>`;
+  const pend = location.hash.slice(1).startsWith('kurulum') && !S.loadedRemote ? `<div class="banner" role="status">${ic('cloud', 18, 1.9)}<span class="grow">Kurulum bağlantısı açıldı. Önce Drive’daki kayıtların yüklenmeli; Google’a bağlanınca bilgilerin otomatik eklenecek.</span><button type="button" class="btn btn-dark btn-sm" data-act="reauth">Bağlan</button></div>` : '';
+  $app.innerHTML = `<div class="shell">${navBar()}<main class="main" id="main">${pend}${body}</main></div>`;
   window.scrollTo(sx, sy);
   if (focusDraft) { const el = $app.querySelector(`[data-draft="${focusDraft}"]`); if (el) el.focus(); }
 }
@@ -1425,7 +1444,7 @@ document.addEventListener('toggle', (e) => { const el = e.target; if (el.dataset
 function applySetupLink() {
   const h = location.hash.slice(1);
   if (!h.startsWith('kurulum')) return false;
-  if (!S.user) return false; // giriş yapınca tekrar denenir
+  if (!S.user || !S.loadedRemote) return false; // Drive'daki güncel veriler yüklenince uygulanır
   const q = new URLSearchParams(h.split('?')[1] || '');
   const boy = parseInt(q.get('boy'), 10); const kilo = parseFloat(String(q.get('kilo') || '').replace(',', '.')); const dogum = q.get('dogum'); const cins = q.get('cinsiyet');
   mutCfg((c) => { c.profile = c.profile || {}; if (boy >= 100 && boy <= 250) c.profile.height = boy; if (/^\d{4}-\d{2}-\d{2}$/.test(dogum || '')) c.profile.birth = dogum; if (cins === 'k' || cins === 'f') c.profile.sex = 'f'; if (cins === 'e' || cins === 'm') c.profile.sex = 'm'; });
