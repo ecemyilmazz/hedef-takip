@@ -206,7 +206,7 @@ function defaultConfig() {
     },
     care: { weekly: [], todos: [] },
     nutGoals: { p: 3, y: 2, c: 3, s: 0, u: 1 },
-    sportGoal: { pilGoal: 2, pilMin: 40, weekMin: 150, pilDays: [1, 4], pilTime: '20:00' },
+    sportGoal: { pilGoal: 2, pilMin: 40, weekMin: 150, pilDays: [], pilTime: '20:00' },
     drinks: [
       { id: 'turk', name: 'Türk kahvesi', icon: 'turk', color: 'brown', variants: ['Tek', 'Duble'], coffee: true },
       { id: 'filtre', name: 'Filtre kahve', icon: 'filtre', color: 'stone', coffee: true },
