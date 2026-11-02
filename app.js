@@ -435,7 +435,7 @@ function pilatesBanner() {
   const due = (toMin(sg.pilTime || '20:00') || 0) + (sg.pilMin || 40);
   let nowM = now.getHours() * 60 + now.getMinutes(); if (now.getHours() < DAY_START_HOUR) nowM += 1440;
   if (nowM < due) return '';
-  return `<div class="banner" role="status">${ic('pilates', 18, 1.9)}<span class="grow">Bugün pilates günüydü (${esc(sg.pilTime || '20:00')}). Gittiysen işaretle.</span><button type="button" class="btn btn-sport btn-sm" data-act="sportQuick">Pilates yaptım</button><button type="button" class="btn btn-ghost btn-sm" data-act="pilSkip">Bugün gitmedim</button></div>`;
+  return `<div class="banner" role="status">${ic('pilates', 18, 1.9)}<span class="grow">Bugün ${esc(sg.pilTime || '20:00')} pilatesine gittin mi?</span><button type="button" class="btn btn-sport btn-sm" data-act="sportQuick">Evet, gittim</button><button type="button" class="btn btn-ghost btn-sm" data-act="pilSkip">Hayır</button></div>`;
 }
 function weekKeys(key) { const d = dateObj(key); const dow = (d.getDay() + 6) % 7; const mon = addDays(key, -dow); return Array.from({ length: 7 }, (_, i) => addDays(mon, i)); }
 
