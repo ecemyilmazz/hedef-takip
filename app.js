@@ -499,7 +499,51 @@ function viewLogin() {
 }
 
 /* ---------- alanlar ---------- */
+function viewHomeDesktop() {
+  const k = todayKey(); const d = getDay(k); const c = S.config;
+  const sl = sleepMinutes(k); const bi = bmrInfo();
+  const wk = weekKeys(k); const pil = wk.reduce((s2, x) => s2 + (getDay(x).sport || []).filter((e) => e.act === 'pilates').length, 0);
+  const marks = eats(d).reduce((s2, e) => s2 + (e.skip ? 0 : Object.values(e.marks).filter(Boolean).length), 0);
+  const mood = d.mood != null ? MOODS[d.mood] : null;
+  const mini = (icon, color, label, value, sub) => { const [fg, bg] = col(color); return `<div class="mini"><span class="chip-ic" style="width:30px;height:30px;border-radius:9px;background:${bg};color:${fg}">${ic(icon, 16, 2)}</span><div class="col" style="min-width:0"><span class="mini-l">${label}</span><span class="mini-v">${value}</span>${sub ? `<span class="mini-s">${sub}</span>` : ''}</div></div>`; };
+  const health = `<a class="area area-wide" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>
+    <div class="minis">${[
+      mini('drop', 'blue', 'Su', d.water.length + ' / ' + c.waterGoal, 'bardak'),
+      mini('moon', 'indigo', 'Dün gece uyku', sl != null ? durText(sl) : '—', d.sleep.wake ? 'kalkış ' + esc(d.sleep.wake) : ''),
+      mini('heart', mood ? 'teal' : 'gray', 'Mod', mood ? mood.label : '—', d.notes.length ? d.notes.length + ' not' : ''),
+      mini('egg', 'orange', 'Öğün işaretleri', String(marks), eats(d).filter((e) => e.time && !e.skip).length + ' öğün'),
+      mini('pilates', 'orange', 'Pilates bu hafta', pil + ' / ' + c.sportGoal.pilGoal, ''),
+      mini('flame', 'orange', 'Bazal', bi.ready ? fmtK(bi.bmr) + ' kcal' : '—', bi.ready ? '~' + fmtK(bi.tdee) + ' toplam' : '')
+    ].join('')}</div></a>`;
+  const areas = c.areas.map((a) => {
+    const gs = a.goals || []; const [fg] = col(a.color); const done = gs.filter((g) => goalDone(g, d)).length;
+    const list = gs.slice(0, 5).map((g) => { const v = goalVal(g, d); const ok = goalDone(g, d); const [gf, gb] = col(g.color || a.color);
+      return `<div class="row" style="gap:8px;min-height:30px"><span class="chip-ic" style="width:26px;height:26px;border-radius:8px;background:${gb};color:${gf}">${ic(g.icon, 14, 2)}</span><span class="grow" style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.name)}</span><span style="font-size:12px;font-weight:700;color:${ok ? '#15803D' : '#6B7280'}">${g.type === 'check' ? (ok ? '✓ yapıldı' : 'bekliyor') : v.n + ' / ' + (g.limit ? '≤' : '') + g.target + ' ' + esc(g.unit || '')}</span></div>`; }).join('');
+    return `<a class="area" href="#area:${esc(a.id)}"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">${esc(a.sub || '')}</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>
+      ${gs.length ? `<div class="row" style="gap:10px"><div class="bar grow" style="height:6px"><div style="height:6px;width:${Math.round(done / gs.length * 100)}%;background:${fg}"></div></div><span class="sub" style="font-weight:700;color:#111827">${done}/${gs.length} bugün</span></div><div class="col" style="gap:2px">${list}</div>${gs.length > 5 ? `<span class="sub">+${gs.length - 5} hedef daha</span>` : ''}`
+        : `<div class="area-empty"><span>${esc(a.examples || 'Henüz hedef yok')}</span><b style="color:${fg}">+ Hedef ekle</b></div>`}</a>`;
+  }).join('');
+  // son 7 gün düzen tablosu
+  const days7 = Array.from({ length: 7 }, (_, i) => addDays(k, i - 6));
+  const sg = c.sportGoal;
+  const rows = [
+    { label: 'Su hedefi', icon: 'drop', color: 'blue', f: (x) => { const dd = S.days[x]; if (!dd) return null; return (dd.water || []).length >= c.waterGoal; } },
+    { label: 'Mod kaydı', icon: 'heart', color: 'teal', f: (x) => { const dd = S.days[x]; if (!dd) return null; return dd.mood != null || (dd.notes || []).some((n) => n.mood != null); } },
+    { label: 'Uyku 7 sa+', icon: 'moon', color: 'indigo', f: (x) => { const m = sleepMinutes(x); return m == null ? null : m >= 420; } },
+    { label: 'Pilates', icon: 'pilates', color: 'orange', f: (x) => { const dd = getDay(x); const did = (dd.sport || []).some((e) => e.act === 'pilates'); if (did) return true; return (sg.pilDays || []).includes(dateObj(x).getDay()) && x < k ? false : null; } },
+    { label: 'Rafine şeker yok', icon: 'cube', color: 'pink', f: (x) => { const dd = S.days[x]; if (!dd) return null; const ev = eats(dd); if (!ev.some((e) => e.time || Object.values(e.marks).some(Boolean))) return null; return !ev.some((e) => !e.skip && e.marks.s); } }
+  ].concat(c.areas.flatMap((a) => (a.goals || []).map((g) => ({ label: g.name, icon: g.icon, color: g.color || a.color, f: (x) => (S.days[x] ? goalDone(g, getDay(x)) : null) }))));
+  const streak = `<section class="card" aria-label="Son 7 gün"><div class="card-h"><h2>Son 7 gün</h2><span class="hint">dolu = tuttu · boş = tutmadı · nokta = kayıt yok</span></div>
+    <div class="streak"><span></span>${days7.map((x) => { const dt = dateObj(x); return `<span class="st-h ${x === k ? 'today' : ''}">${TR_D3[dt.getDay()]}<b>${dt.getDate()}</b></span>`; }).join('')}
+    ${rows.map((r) => { const [fg, bg] = col(r.color); return `<span class="st-l"><span style="color:${fg};display:flex">${ic(r.icon, 15, 2)}</span><span>${esc(r.label)}</span></span>${days7.map((x) => { const v = r.f(x); return `<span class="st-c" title="${esc(r.label)} · ${esc(longDate(x))}: ${v == null ? 'kayıt yok' : v ? 'tuttu' : 'tutmadı'}">${v == null ? '<i></i>' : `<em style="${v ? `background:${fg};border-color:${fg}` : `border-color:${bg === '#F3F4F6' ? '#D1D5DB' : fg};opacity:.45`}"></em>`}</span>`; }).join('')}`; }).join('')}</div></section>`;
+  const hour = new Date().getHours(); const greet = hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar';
+  return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>${greet}${S.user.name ? ', ' + esc(S.user.name) : ''}</h1></div></header>
+    ${pilatesBanner()}
+    <div class="dash"><div class="dash-col">${health}<div class="dash-2">${areas}</div></div>
+    <div class="dash-col">${streak}<section class="card" aria-label="Yeni alan"><div class="card-h"><h2>Yeni alan</h2><span class="hint">örn. İlişkiler, Ev, Hobi</span></div><div class="row" style="gap:8px">${addAreaForm()}</div></section></div></div>`;
+}
 function viewHome() {
+  if (isDesktop()) return viewHomeDesktop();
   const k = todayKey(); const d = getDay(k); const c = S.config;
   const pilWeek = weekKeys(k).reduce((s, x) => s + (getDay(x).sport || []).filter((e) => e.act === 'pilates').length, 0);
   const sl = sleepMinutes(k);
