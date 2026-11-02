@@ -581,8 +581,8 @@ function weekKeys(key) { const d = dateObj(key); const dow = (d.getDay() + 6) % 
 
 /* ================= görünüm parçaları ================= */
 function navBar() {
-  const items = [['home', 'grid', 'Alanlar'], ['today', 'home', 'Bugün'], ['sport', 'run', 'Spor'], ['insights', 'chart', 'İçgörüler'], ['settings', 'sliders', 'Ayarlar']];
-  const cur = S.route.startsWith('area:') ? 'home' : S.route;
+  const items = [['home', 'grid', 'Alanlar'], ['today', 'home', 'Bugün'], ['insights', 'chart', 'İçgörüler'], ['settings', 'sliders', 'Ayarlar']];
+  const cur = S.route.startsWith('area:') || S.route === 'sport' ? 'home' : S.route;
   return `<nav class="nav" aria-label="Ana menü"><div class="brand"><span class="logo">${ic('target', 17, 2)}</span>Hedeflerim</div>${items.map(([r, i, l]) =>
     `<a href="#${r}" ${cur === r ? 'aria-current="page"' : ''}>${ic(i, 20, cur === r ? 2 : 1.8)}${l}</a>`).join('')}
     <div class="nav-foot">${syncChip()}<div class="row" style="gap:8px">${S.user.picture ? `<img src="${esc(S.user.picture)}" alt="" width="28" height="28" style="border-radius:99px" referrerpolicy="no-referrer">` : ''}<div class="col" style="min-width:0"><span style="font-size:12.5px;font-weight:700">${esc(S.user.name || '')}</span><span class="sub" style="font-size:11px;overflow:hidden;text-overflow:ellipsis">${esc(S.user.email)}</span></div></div></div></nav>`;
@@ -591,7 +591,7 @@ function topBar(title, sub, extra = '') {
   return `<header class="top"><div class="col" style="gap:2px">${sub ? `<span class="date">${esc(sub)}</span>` : ''}<h1>${esc(title)}</h1></div><div class="row" style="gap:8px;flex-wrap:wrap">${extra}${syncChip()}</div></header>`;
 }
 function healthTabs(cur) {
-  return `<nav class="subnav" aria-label="Sağlık bölümleri"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a><a href="#today" ${cur === 'today' ? 'aria-current="page"' : ''}>Günlük</a><a href="#sport" ${cur === 'sport' ? 'aria-current="page"' : ''}>Spor</a></nav>`;
+  return `<nav class="subnav" aria-label="Sağlık bölümleri"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a><a href="#today" ${cur === 'today' ? 'aria-current="page"' : ''}>Günlük</a></nav>`;
 }
 function icoBox(icon, color, size = 34, isz = 18) {
   const [fg, bg] = col(color);
@@ -616,6 +616,14 @@ function viewLogin() {
 }
 
 /* ---------- alanlar ---------- */
+function sportSummary(k) {
+  const c = S.config; const sg = c.sportGoal; const wk = weekKeys(k);
+  const pil = wk.reduce((s2, x) => s2 + (getDay(x).sport || []).filter((e) => e.act === 'pilates').length, 0);
+  const wMin = wk.reduce((s2, x) => s2 + (getDay(x).sport || []).reduce((a, e) => a + (e.min || 0), 0), 0);
+  const d = getDay(k); const todayMin = (d.sport || []).reduce((a, e) => a + (e.min || 0), 0); const reps = (d.reps || []).reduce((a, r) => a + (r.n || 0), 0);
+  const days = wk.filter((x) => (getDay(x).sport || []).length).length;
+  return { sg, pil, wMin, todayMin, reps, days };
+}
 function viewHomeDesktop() {
   const k = todayKey(); const d = getDay(k); const c = S.config;
   const sl = sleepMinutes(k); const bi = bmrInfo();
@@ -623,15 +631,18 @@ function viewHomeDesktop() {
   const marks = eats(d).reduce((s2, e) => s2 + (e.skip ? 0 : Object.values(e.marks).filter(Boolean).length), 0);
   const mood = d.mood != null ? MOODS[d.mood] : null;
   const mini = (icon, color, label, value, sub) => { const [fg, bg] = col(color); return `<div class="mini"><span class="chip-ic" style="width:30px;height:30px;border-radius:9px;background:${bg};color:${fg}">${ic(icon, 16, 2)}</span><div class="col" style="min-width:0"><span class="mini-l">${label}</span><span class="mini-v">${value}</span>${sub ? `<span class="mini-s">${sub}</span>` : ''}</div></div>`; };
-  const health = `<a class="area area-wide" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>
+  const health = `<a class="area area-wide" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Mod · Vücut</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>
     <div class="minis">${[
       mini('drop', 'blue', 'Su', d.water.length + ' / ' + c.waterGoal, 'bardak'),
       mini('moon', 'indigo', 'Dün gece uyku', sl != null ? durText(sl) : '—', d.sleep.wake ? 'kalkış ' + esc(d.sleep.wake) : ''),
       mini('heart', mood ? 'teal' : 'gray', 'Mod', mood ? mood.label : '—', d.notes.length ? d.notes.length + ' not' : ''),
       mini('egg', 'orange', 'Öğün işaretleri', String(marks), eats(d).filter((e) => e.time && !e.skip).length + ' öğün'),
-      mini('pilates', 'orange', 'Pilates bu hafta', pil + ' / ' + c.sportGoal.pilGoal, ''),
+      mini('kapsul', 'sky', 'Takviyeler', Object.keys(d.supps || {}).length + ' / ' + c.supps.length, 'bugün alındı'),
       mini('flame', 'orange', 'Bazal', bi.ready ? fmtK(bi.bmr) + ' kcal' : '—', bi.ready ? '~' + fmtK(bi.tdee) + ' toplam' : '')
     ].join('')}</div></a>`;
+  const ss = sportSummary(k);
+  const sportCardD = `<a class="area" href="#sport"><div class="row" style="gap:12px">${icoBox('run', 'orange', 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">Spor</span><span class="sub">Pilates · Yürüyüş · Tekrarlı hareketler</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>
+    <div class="minis" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="mini"><div class="col"><span class="mini-l">Pilates bu hafta</span><span class="mini-v">${ss.pil} / ${ss.sg.pilGoal}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Haftalık süre</span><span class="mini-v">${ss.wMin} / ${ss.sg.weekMin} dk</span></div></div><div class="mini"><div class="col"><span class="mini-l">Bugün</span><span class="mini-v">${ss.todayMin ? durText(ss.todayMin) : '—'}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Aktif gün</span><span class="mini-v">${ss.days} / 7</span></div></div></div></a>`;
   const areas = c.areas.map((a) => {
     if (a.id === 'bakim') { const cw = S.config.care.weekly || []; const cdone = cw.filter((it) => careWeek(it, k).done >= carePer(it)).length; const copen = (S.config.care.todos || []).filter((t) => !t.done).length; const list = cw.slice(0, 6).map((it) => { const w = careWeek(it, k); const ok = w.done >= (it.perWeek || 1); return `<div class="row" style="gap:8px;min-height:28px"><span class="chip-ic" style="width:24px;height:24px;border-radius:7px;background:#FCE7F3;color:#BE185D">${ic(careEmoji(it), 13, 2)}</span><span class="grow" style="font-size:13px;font-weight:600">${esc(it.name)}</span><span style="font-size:12px;font-weight:700;color:${ok ? '#15803D' : '#B45309'}">${ok ? '✓ ' : ''}${w.done}/${carePer(it)}</span></div>`; }).join(''); return `<a class="area" href="#area:bakim"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Bu hafta ${cdone}/${cw.length} tamam · ${copen} yapılacak</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div>${list ? `<div class="col" style="gap:2px">${list}</div>` : `<div class="area-empty"><span>${esc(a.examples || '')}</span><b style="color:#BE185D">+ Ekle</b></div>`}</a>`; }
     if (a.id === 'maddi') { const ms = moneySummary(k); return `<a class="area" href="#area:maddi"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 38, 20)}<div class="col grow"><span style="font-size:16px;font-weight:800">${esc(a.name)}</span><span class="sub">Harcama · Bütçe · Birikim</span></div><span class="area-open">Aç ${ic('chevR', 14, 2.2)}</span></div><div class="minis" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="mini"><div class="col"><span class="mini-l">Bugün</span><span class="mini-v">${fmtTL(daySpend(d))}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Bu ay</span><span class="mini-v">${fmtTL(ms.spent)}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Kalan</span><span class="mini-v" style="color:${ms.left < 0 ? '#B91C1C' : '#111827'}">${ms.income ? fmtTL(ms.left) : '—'}</span></div></div><div class="mini"><div class="col"><span class="mini-l">Birikim (bu ay)</span><span class="mini-v">${fmtTL(ms.savedMonth)}</span></div></div></div></a>`; }
@@ -659,7 +670,7 @@ function viewHomeDesktop() {
   const hour = new Date().getHours(); const greet = hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar';
   return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>${greet}${S.user.name ? ', ' + esc(S.user.name) : ''}</h1></div></header>
     ${pilatesBanner()}${careBanner()}
-    <div class="dash"><div class="dash-col">${health}<div class="dash-2">${areas}</div></div>
+    <div class="dash"><div class="dash-col">${health}<div class="dash-2">${sportCardD}${areas}</div></div>
     <div class="dash-col">${streak}<section class="card" aria-label="Yeni alan"><div class="card-h"><h2>Yeni alan</h2><span class="hint">örn. İlişkiler, Ev, Hobi</span></div><div class="row" style="gap:8px">${addAreaForm()}</div></section></div></div>`;
 }
 function viewHome() {
@@ -671,12 +682,14 @@ function viewHome() {
   const chips = [
     ['drop', '#1D4ED8', 'Su ' + d.water.length + '/' + c.waterGoal],
     ['moon', '#3730A3', 'Uyku ' + (sl != null ? durText(sl) : '—')],
-    ['pilates', '#C2410C', 'Pilates ' + pilWeek + '/' + c.sportGoal.pilGoal],
+    ['kapsul', '#0369A1', 'Takviye ' + Object.keys(d.supps || {}).length + '/' + c.supps.length],
     ['heart', '#4B5563', 'Mod ' + mood]
   ];
   const bi = bmrInfo(); if (bi.ready) chips.push(['flame', '#C2410C', 'Bazal ' + fmtK(bi.bmr) + ' kcal']);
-  const health = `<a class="area" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Spor · Mod</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>
+  const health = `<a class="area" href="#today"><div class="row" style="gap:12px">${icoBox('heart', 'teal', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Sağlık</span><span class="sub" style="font-size:13px">Beslenme · Su · Uyku · Mod · Vücut</span></div>${ic('chevR', 17, 2, 'style="color:#6B7280"')}</div>
     <div class="row" style="flex-wrap:wrap;gap:6px">${chips.map(([i, f, t]) => `<span class="tag"><span style="color:${f};display:flex">${ic(i, 16, 2)}</span>${esc(t)}</span>`).join('')}</div></a>`;
+  const ssm = sportSummary(k);
+  const sportCardM = `<a class="area" href="#sport"><div class="row" style="gap:12px">${icoBox('run', 'orange', 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">Spor</span><span class="sub" style="font-size:13px">Pilates · Yürüyüş · Tekrarlı hareketler</span></div>${ic('chevR', 18, 2, 'style="color:#6B7280"')}</div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag">Pilates ${ssm.pil}/${ssm.sg.pilGoal}</span><span class="tag">Bu hafta ${ssm.wMin} dk</span><span class="tag">Bugün ${ssm.todayMin ? durText(ssm.todayMin) : '—'}</span></div></a>`;
   const others = c.areas.map((a) => {
     if (a.id === 'bakim') { const cw = S.config.care.weekly || []; const cdone = cw.filter((it) => careWeek(it, k).done >= carePer(it)).length; const copen = (S.config.care.todos || []).filter((t) => !t.done).length; return `<a class="area" href="#area:bakim"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">${esc(a.sub || '')}</span></div>${ic('chevR', 18, 2, 'style="color:#6B7280"')}</div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag">Bu hafta ${cdone}/${cw.length} bakım</span><span class="tag">${copen} yapılacak</span></div></a>`; }
     if (a.id === 'maddi') { const ms = moneySummary(k); return `<a class="area" href="#area:maddi"><div class="row" style="gap:12px">${icoBox(a.icon, a.color, 42, 22)}<div class="col grow"><span style="font-size:18px;font-weight:800">${esc(a.name)}</span><span class="sub" style="font-size:13px">Harcama · Bütçe · Birikim</span></div>${ic('chevR', 18, 2, 'style="color:#6B7280"')}</div><div class="row" style="flex-wrap:wrap;gap:6px"><span class="tag">Bugün ${fmtTL(daySpend(d))}</span><span class="tag">Bu ay ${fmtTL(ms.spent)}</span>${ms.income ? `<span class="tag">Kalan ${fmtTL(ms.left)}</span>` : ''}</div></a>`; }
@@ -689,7 +702,7 @@ function viewHome() {
   }).join('');
   return `${topBar('Alanlarım', longDate(k))}
     ${pilatesBanner()}${careBanner()}<p style="color:#4B5563;font-size:14px;margin-top:-8px">Merhaba${S.user.name ? ' ' + esc(S.user.name) : ''}. Hayatının her alanı için ayrı hedefler.</p>
-    <div class="grid-cards grid-areas">${health}${others}</div>
+    <div class="grid-cards grid-areas">${health}${sportCardM}${others}</div>
     <div class="row" style="gap:8px">${addAreaForm()}</div>`;
 }
 function addAreaForm() {
@@ -1129,7 +1142,7 @@ function viewSport() {
       <div class="row" style="gap:8px"><input class="field dashed grow" type="text" data-draft="newMove" value="${esc(S.ui.drafts.newMove || '')}" placeholder="Yeni hareket (örn. Lunge)" aria-label="Yeni hareket adı"><button type="button" class="btn btn-dark btn-sm" data-act="addMove">Ekle</button></div>
       <div class="row sub" style="gap:8px">Birim:${[['tekrar', 'Tekrar'], ['sn', 'Saniye']].map(([v, l]) => `<button type="button" class="pill" style="height:36px" data-act="newUnit" data-v="${v}" aria-pressed="${unit === v}">${l}</button>`).join('')}</div></section>`;
   const secLog = `    <section class="card" aria-label="Bugünkü aktiviteler"><div class="card-h"><h2>Bugün</h2><span class="hint">${d.sport.length ? d.sport.length + ' aktivite · ' + durText(d.sport.reduce((s, x) => s + (x.min || 0), 0)) : 'Kayıt yok'}</span></div>${log || '<p class="empty">Bugün henüz aktivite yok. Başladığında tek dokunuş yeter.</p>'}</section>`;
-  if (!isDesktop()) return `${healthTabs('sport')}${topBar('Spor', longDate(k))}${pilatesBanner()}<div class="grid-cards">${secWeek}${secAct}${secMoves}${secLog}</div>`;
+  if (!isDesktop()) return `<nav class="subnav"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a></nav>${topBar('Spor', longDate(k))}${pilatesBanner()}<div class="grid-cards">${secWeek}${secAct}${secMoves}${secLog}</div>`;
   // ---------- masaüstü ----------
   const activeDays = wk.filter((x) => (getDay(x).sport || []).length).length;
   const todayMin = d.sport.reduce((s2, x) => s2 + (x.min || 0), 0);
@@ -1160,7 +1173,7 @@ function viewSport() {
   const trend = `<section class="card" aria-label="Son 6 hafta"><div class="card-h"><h2>Son 6 hafta</h2><span class="hint">haftalık dakika · çizgi = hedef</span></div>
     <div class="wbars" role="img" aria-label="Son 6 haftanın spor dakikaları: ${weeks.map((w) => w.label + ' ' + w.m + ' dk').join(', ')}"><span class="wplot"><span class="wgoal" style="bottom:${Math.round(sg.weekMin / maxW * 100)}%"></span></span>${weeks.map((w) => `<div class="wbar" title="${w.label} haftası: ${w.m} dk"><b>${w.m || ''}</b><span style="height:${Math.max(2, Math.round(w.m / maxW * 100))}%;background:${w.cur ? '#C2410C' : '#FDBA74'}"></span><em>${w.label}</em></div>`).join('')}</div></section>`;
   const quickBar = `<div class="quick" role="toolbar" aria-label="Hızlı kayıt"><button type="button" class="qbtn" data-act="sportQuick">${ic('pilates', 16, 1.9)}<span>Pilates yaptım · ${sg.pilMin} dk</span></button>${sp.mode === 'idle' ? `<button type="button" class="qbtn" data-act="sportStart">${ic('play', 14, 0, 'fill="currentColor"')}<span>${esc(act.name)} başladım</span></button>` : ''}</div>`;
-  return `<header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>Spor</h1></div>${quickBar}</header>
+  return `<nav class="subnav"><a href="#home">${ic('chevL', 16, 2)}Alanlar</a></nav><header class="dtop"><div class="col" style="gap:2px"><span class="date">${esc(longDate(k))}</span><h1>Spor</h1></div>${quickBar}</header>
     ${pilatesBanner()}<div class="kpis">${kpis}</div>
     <section class="card" aria-label="Bu hafta"><div class="card-h"><h2>Bu hafta</h2><span class="hint">Turuncu kesik çerçeve = planlanan pilates · gri = kaçırılan</span></div><div class="wk">${cal}</div></section>
     <div class="dash"><div class="dash-col">${secAct}${secMoves}</div><div class="dash-col">${secLog}${trend}</div></div>`;
