@@ -280,6 +280,7 @@ async function onToken(resp) {
     if (switched) loadLocal();
     render();
     await loadRemote();
+    applySetupLink();
   } catch (e) { handleErr(e); }
 }
 function signOut() {
@@ -1074,7 +1075,20 @@ document.addEventListener('keydown', (e) => {
   const a = map[e.target.dataset.draft]; if (a) { e.preventDefault(); ACT[a]({}); }
 });
 document.addEventListener('toggle', (e) => { const el = e.target; if (el.dataset && el.dataset.keep) S.ui.open[el.dataset.keep] = el.open; }, true);
-window.addEventListener('hashchange', () => { S.route = location.hash.slice(1) || 'home'; render(); window.scrollTo(0, 0); });
+// #kurulum?boy=163&dogum=1997-11-07&kilo=93&cinsiyet=k → profil bilgilerini kaydet (bilgiler sunucuya gitmez)
+function applySetupLink() {
+  const h = location.hash.slice(1);
+  if (!h.startsWith('kurulum')) return false;
+  if (!S.user) return false; // giriş yapınca tekrar denenir
+  const q = new URLSearchParams(h.split('?')[1] || '');
+  const boy = parseInt(q.get('boy'), 10); const kilo = parseFloat(String(q.get('kilo') || '').replace(',', '.')); const dogum = q.get('dogum'); const cins = q.get('cinsiyet');
+  mutCfg((c) => { c.profile = c.profile || {}; if (boy >= 100 && boy <= 250) c.profile.height = boy; if (/^\d{4}-\d{2}-\d{2}$/.test(dogum || '')) c.profile.birth = dogum; if (cins === 'k' || cins === 'f') c.profile.sex = 'f'; if (cins === 'e' || cins === 'm') c.profile.sex = 'm'; });
+  if (kilo >= 20 && kilo <= 400) mutDay(todayKey(), (d) => { d.weight = Math.round(kilo * 10) / 10; });
+  history.replaceState(null, '', location.pathname + '#today'); S.route = 'today'; render();
+  const b = bmrInfo(); toast(b.ready ? 'Bilgilerin kaydedildi. Bazal metabolizman: ' + fmtK(b.bmr) + ' kcal/gün' : 'Bilgilerin kaydedildi.');
+  return true;
+}
+window.addEventListener('hashchange', () => { if (applySetupLink()) return; S.route = location.hash.slice(1) || 'home'; render(); window.scrollTo(0, 0); });
 window.addEventListener('online', () => sync());
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && S.user) { if (tokenOk()) loadRemote(); else render(); } });
 
@@ -1103,6 +1117,7 @@ function exportCsv() {
 (function start() {
   try { const u = JSON.parse(localStorage.getItem('ht:lastUser') || 'null'); if (u && u.email) { S.user = u; loadLocal(); S.sync = 'needsAuth'; } } catch (e) { /* yok say */ }
   render();
+  if (S.user) applySetupLink();
   initGis();
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   setInterval(() => { if (S.user && S.dirty.size && tokenOk()) sync(); }, 60000);
